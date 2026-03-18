@@ -39,9 +39,8 @@ const MovieDetail = () => {
       <div className="relative w-full aspect-video bg-black">
         {playing && movie.video_url ? (
           <VideoPlayer
-            src={movie.video_url}
+            url={movie.video_url}
             title={movie.title}
-            onBack={() => setPlaying(false)}
           />
         ) : (
           <>
