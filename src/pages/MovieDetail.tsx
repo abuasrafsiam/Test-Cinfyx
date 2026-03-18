@@ -2,9 +2,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, Heart, Share2, Star, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMovie, useMoviesByCategory, useMovies } from "@/hooks/useMovies";
-import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, fetchTMDBById, type TMDBCastMember } from "@/hooks/useTMDB";
+import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, type TMDBCastMember } from "@/hooks/useTMDB";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 interface TMDBExtras {
   trailerKey: string | null;
@@ -12,7 +12,10 @@ interface TMDBExtras {
   rating: number;
   runtime: number;
   tagline: string;
+  backdropVariant: string | null;
 }
+
+const TMDB_API_KEY = "fc113ae7bdb111be9218caccbfb49bfe";
 
 const MovieDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,37 +25,47 @@ const MovieDetail = () => {
   const navigate = useNavigate();
 
   const [extras, setExtras] = useState<TMDBExtras>({
-    trailerKey: null,
-    cast: [],
-    rating: 0,
-    runtime: 0,
-    tagline: "",
+    trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null,
   });
   const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     if (!movie) return;
-    setExtras({ trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "" });
+    setExtras({ trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null });
     setImageLoaded(false);
 
     const fetchExtras = async () => {
       const tmdbId = await searchTMDBByTitle(movie.title);
       if (!tmdbId) return;
 
-      const [trailerKey, cast, details] = await Promise.all([
+      const [trailerKey, cast, details, imagesRes] = await Promise.all([
         fetchTMDBTrailer(tmdbId),
         fetchTMDBCast(tmdbId),
-        fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=fc113ae7bdb111be9218caccbfb49bfe`)
-          .then((r) => r.json())
-          .catch(() => null),
+        fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}`)
+          .then((r) => r.json()).catch(() => null),
+        fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/images?api_key=${TMDB_API_KEY}`)
+          .then((r) => r.json()).catch(() => null),
       ]);
 
+      // Get a different backdrop variation than the primary one
+      let backdropVariant: string | null = null;
+      if (imagesRes?.backdrops && imagesRes.backdrops.length > 1) {
+        const primaryPath = movie.backdrop_url?.split("/").pop();
+        const alt = imagesRes.backdrops.find(
+          (b: { file_path: string }) => !b.file_path.endsWith(primaryPath || "___")
+        );
+        if (alt) {
+          backdropVariant = `https://image.tmdb.org/t/p/original${alt.file_path}`;
+        }
+      }
+
       setExtras({
-        trailerKey: trailerKey,
+        trailerKey,
         cast,
         rating: details?.vote_average || 0,
         runtime: details?.runtime || 0,
         tagline: details?.tagline || "",
+        backdropVariant,
       });
     };
     fetchExtras();
@@ -83,6 +96,9 @@ const MovieDetail = () => {
   const moreLikeThis = similarMovies.filter((m) => m.id !== movie.id).slice(0, 10);
   const forYou = allMovies.filter((m) => m.id !== movie.id && !moreLikeThis.some((s) => s.id === m.id)).slice(0, 12);
 
+  // Use a different backdrop for details page — prefer variant, then primary backdrop. NEVER poster.
+  const heroImage = extras.backdropVariant || movie.backdrop_url;
+
   const formatRuntime = (min: number) => {
     if (!min) return null;
     const h = Math.floor(min / 60);
@@ -92,7 +108,7 @@ const MovieDetail = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Hero */}
+      {/* Hero — Trailer or Backdrop (NEVER poster) */}
       <div className="relative w-full aspect-video overflow-hidden">
         {extras.trailerKey ? (
           <iframe
@@ -101,13 +117,15 @@ const MovieDetail = () => {
             allow="autoplay; encrypted-media"
             allowFullScreen
           />
-        ) : (
+        ) : heroImage ? (
           <img
-            src={movie.backdrop_url || movie.poster_url}
+            src={heroImage}
             alt={movie.title}
             className={`w-full h-full object-cover transition-opacity duration-700 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
             onLoad={() => setImageLoaded(true)}
           />
+        ) : (
+          <div className="w-full h-full bg-secondary" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
         <button
@@ -120,7 +138,7 @@ const MovieDetail = () => {
 
       {/* Content */}
       <div className="px-5 -mt-8 relative z-10">
-        {/* Poster + Title */}
+        {/* Poster (small, left) + Title — poster ONLY used here */}
         <div className="flex gap-4 items-end">
           {movie.poster_url && (
             <img
@@ -137,7 +155,7 @@ const MovieDetail = () => {
           </div>
         </div>
 
-        {/* Metadata row */}
+        {/* Metadata */}
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           {extras.rating > 0 && (
             <span className="flex items-center gap-1 text-xs font-semibold text-yellow-500 bg-yellow-500/10 px-2.5 py-1 rounded-lg">
@@ -215,17 +233,13 @@ const MovieDetail = () => {
           </div>
         )}
 
-        {/* More Like This */}
+        {/* More Like This — uses poster_url only */}
         {moreLikeThis.length > 0 && (
           <div className="mt-7">
             <h2 className="text-base font-semibold text-foreground mb-3">More Like This</h2>
             <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 pb-2">
               {moreLikeThis.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => navigate(`/movie/${m.id}`)}
-                  className="shrink-0 focus:outline-none group"
-                >
+                <button key={m.id} onClick={() => navigate(`/movie/${m.id}`)} className="shrink-0 focus:outline-none group">
                   <div className="w-28 h-40 rounded-2xl overflow-hidden bg-secondary transition-transform duration-200 group-active:scale-95">
                     {m.poster_url ? (
                       <img src={m.poster_url} alt={m.title} loading="lazy" className="w-full h-full object-cover" />
@@ -240,17 +254,13 @@ const MovieDetail = () => {
           </div>
         )}
 
-        {/* For You */}
+        {/* For You — uses poster_url only */}
         {forYou.length > 0 && (
           <div className="mt-7">
             <h2 className="text-base font-semibold text-foreground mb-3">For You</h2>
             <div className="grid grid-cols-3 gap-3">
               {forYou.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => navigate(`/movie/${m.id}`)}
-                  className="focus:outline-none group text-left"
-                >
+                <button key={m.id} onClick={() => navigate(`/movie/${m.id}`)} className="focus:outline-none group text-left">
                   <div className="w-full aspect-[2/3] rounded-xl overflow-hidden bg-secondary transition-transform duration-200 group-active:scale-95">
                     {m.poster_url ? (
                       <img src={m.poster_url} alt={m.title} loading="lazy" className="w-full h-full object-cover" />

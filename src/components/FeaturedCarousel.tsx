@@ -3,19 +3,44 @@ import { useNavigate } from "react-router-dom";
 import { Play, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFeaturedMovies } from "@/hooks/useMovies";
+import { searchTMDBByTitle, fetchTMDBTrailer } from "@/hooks/useTMDB";
 
 const FeaturedCarousel = () => {
   const { data: movies = [] } = useFeaturedMovies();
   const [current, setCurrent] = useState(0);
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [trailerLoading, setTrailerLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Auto-rotate (only when no trailer playing, or longer interval with trailer)
   useEffect(() => {
     if (movies.length <= 1) return;
+    const interval = trailerKey ? 15000 : 5000;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % movies.length);
-    }, 5000);
+    }, interval);
     return () => clearInterval(timer);
-  }, [movies.length]);
+  }, [movies.length, trailerKey]);
+
+  // Fetch trailer for current movie
+  useEffect(() => {
+    if (movies.length === 0) return;
+    const movie = movies[current];
+    setTrailerKey(null);
+    setTrailerLoading(true);
+
+    const fetchTrailer = async () => {
+      try {
+        const tmdbId = await searchTMDBByTitle(movie.title);
+        if (tmdbId) {
+          const key = await fetchTMDBTrailer(tmdbId);
+          setTrailerKey(key);
+        }
+      } catch {}
+      setTrailerLoading(false);
+    };
+    fetchTrailer();
+  }, [current, movies]);
 
   if (movies.length === 0) {
     return (
@@ -29,18 +54,27 @@ const FeaturedCarousel = () => {
 
   return (
     <div className="relative h-[70vh] overflow-hidden">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-        style={{
-          backgroundImage: movie.backdrop_url
-            ? `url(${movie.backdrop_url})`
-            : `url(${movie.poster_url})`,
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-transparent" />
-      </div>
+      {/* Background: Trailer or Backdrop (NEVER poster) */}
+      {trailerKey ? (
+        <iframe
+          key={trailerKey}
+          src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&loop=1&playlist=${trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
+          className="absolute inset-0 w-full h-full border-0 scale-[1.3] origin-center"
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      ) : (
+        movie.backdrop_url && (
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+            style={{ backgroundImage: `url(${movie.backdrop_url})` }}
+          />
+        )
+      )}
+
+      {/* Gradient overlays */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent pointer-events-none" />
 
       {/* Content */}
       <div className="relative h-full flex flex-col justify-end p-6 pb-12 max-w-lg">
