@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      movies: {
+        Row: {
+          backdrop_url: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          featured: boolean | null
+          genre: string | null
+          id: string
+          poster_url: string | null
+          title: string
+          video_url: string | null
+          year: string | null
+        }
+        Insert: {
+          backdrop_url?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean | null
+          genre?: string | null
+          id?: string
+          poster_url?: string | null
+          title: string
+          video_url?: string | null
+          year?: string | null
+        }
+        Update: {
+          backdrop_url?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean | null
+          genre?: string | null
+          id?: string
+          poster_url?: string | null
+          title?: string
+          video_url?: string | null
+          year?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
