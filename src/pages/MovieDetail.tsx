@@ -1,38 +1,59 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Heart, Share2 } from "lucide-react";
+import { ArrowLeft, Play, Heart, Share2, Star, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMovie, useMoviesByCategory } from "@/hooks/useMovies";
-import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, type TMDBCastMember } from "@/hooks/useTMDB";
+import { useMovie, useMoviesByCategory, useMovies } from "@/hooks/useMovies";
+import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, fetchTMDBById, type TMDBCastMember } from "@/hooks/useTMDB";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, useRef } from "react";
+
+interface TMDBExtras {
+  trailerKey: string | null;
+  cast: TMDBCastMember[];
+  rating: number;
+  runtime: number;
+  tagline: string;
+}
 
 const MovieDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { data: movie, isLoading } = useMovie(id!);
   const { data: similarMovies = [] } = useMoviesByCategory(movie?.category || "");
+  const { data: allMovies = [] } = useMovies();
   const navigate = useNavigate();
 
-  const [trailerKey, setTrailerKey] = useState<string | null>(null);
-  const [cast, setCast] = useState<TMDBCastMember[]>([]);
+  const [extras, setExtras] = useState<TMDBExtras>({
+    trailerKey: null,
+    cast: [],
+    rating: 0,
+    runtime: 0,
+    tagline: "",
+  });
   const [imageLoaded, setImageLoaded] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Fetch trailer + cast from TMDB by searching movie title
   useEffect(() => {
     if (!movie) return;
-    setTrailerKey(null);
-    setCast([]);
+    setExtras({ trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "" });
     setImageLoaded(false);
 
     const fetchExtras = async () => {
       const tmdbId = await searchTMDBByTitle(movie.title);
       if (!tmdbId) return;
-      const [key, castData] = await Promise.all([
+
+      const [trailerKey, cast, details] = await Promise.all([
         fetchTMDBTrailer(tmdbId),
         fetchTMDBCast(tmdbId),
+        fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=fc113ae7bdb111be9218caccbfb49bfe`)
+          .then((r) => r.json())
+          .catch(() => null),
       ]);
-      setTrailerKey(key);
-      setCast(castData);
+
+      setExtras({
+        trailerKey: trailerKey,
+        cast,
+        rating: details?.vote_average || 0,
+        runtime: details?.runtime || 0,
+        tagline: details?.tagline || "",
+      });
     };
     fetchExtras();
   }, [movie?.title, movie?.id]);
@@ -41,10 +62,11 @@ const MovieDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Skeleton className="w-full aspect-video" />
-        <div className="p-6 space-y-4">
-          <Skeleton className="h-8 w-3/4" />
+        <div className="p-5 space-y-3">
+          <Skeleton className="h-7 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-12 w-full rounded-2xl" />
         </div>
       </div>
     );
@@ -59,15 +81,22 @@ const MovieDetail = () => {
   }
 
   const moreLikeThis = similarMovies.filter((m) => m.id !== movie.id).slice(0, 10);
+  const forYou = allMovies.filter((m) => m.id !== movie.id && !moreLikeThis.some((s) => s.id === m.id)).slice(0, 12);
+
+  const formatRuntime = (min: number) => {
+    if (!min) return null;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Hero - Trailer or Backdrop */}
+      {/* Hero */}
       <div className="relative w-full aspect-video overflow-hidden">
-        {trailerKey ? (
+        {extras.trailerKey ? (
           <iframe
-            ref={iframeRef}
-            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&loop=1&playlist=${trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
+            src={`https://www.youtube.com/embed/${extras.trailerKey}?autoplay=1&mute=1&loop=1&playlist=${extras.trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
             className="absolute inset-0 w-full h-full border-0 scale-[1.2] origin-center"
             allow="autoplay; encrypted-media"
             allowFullScreen
@@ -80,11 +109,7 @@ const MovieDetail = () => {
             onLoad={() => setImageLoaded(true)}
           />
         )}
-
-        {/* Gradient overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
-
-        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
           className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-background/60 backdrop-blur-md flex items-center justify-center transition-transform active:scale-90"
@@ -94,8 +119,8 @@ const MovieDetail = () => {
       </div>
 
       {/* Content */}
-      <div className="px-5 -mt-6 relative z-10">
-        {/* Poster + Info */}
+      <div className="px-5 -mt-8 relative z-10">
+        {/* Poster + Title */}
         <div className="flex gap-4 items-end">
           {movie.poster_url && (
             <img
@@ -104,31 +129,42 @@ const MovieDetail = () => {
               className="w-24 h-36 rounded-2xl object-cover shadow-2xl shrink-0 border-2 border-secondary"
             />
           )}
-          <div className="pb-1">
-            <h1 className="text-xl font-bold text-foreground leading-tight">
-              {movie.title}
-            </h1>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {movie.year && (
-                <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-md">
-                  {movie.year}
-                </span>
-              )}
-              {movie.genre && (
-                <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-md">
-                  {movie.genre}
-                </span>
-              )}
-            </div>
+          <div className="pb-1 min-w-0 flex-1">
+            <h1 className="text-xl font-bold text-foreground leading-tight">{movie.title}</h1>
+            {extras.tagline && (
+              <p className="text-xs text-primary/80 italic mt-0.5 truncate">{extras.tagline}</p>
+            )}
           </div>
         </div>
 
-        {/* Description */}
-        <p className="text-sm text-foreground/70 mt-4 leading-relaxed line-clamp-4">
-          {movie.description}
-        </p>
+        {/* Metadata row */}
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {extras.rating > 0 && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-yellow-500 bg-yellow-500/10 px-2.5 py-1 rounded-lg">
+              <Star className="w-3.5 h-3.5 fill-current" />
+              {extras.rating.toFixed(1)}
+            </span>
+          )}
+          {movie.year && (
+            <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">
+              <Calendar className="w-3 h-3" />
+              {movie.year}
+            </span>
+          )}
+          {extras.runtime > 0 && (
+            <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">
+              <Clock className="w-3 h-3" />
+              {formatRuntime(extras.runtime)}
+            </span>
+          )}
+          {movie.genre && (
+            <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">
+              {movie.genre}
+            </span>
+          )}
+        </div>
 
-        {/* Action buttons */}
+        {/* Play + Actions */}
         <div className="flex gap-3 mt-5">
           <Button
             onClick={() => navigate(`/watch/${movie.id}`)}
@@ -145,14 +181,19 @@ const MovieDetail = () => {
           </button>
         </div>
 
+        {/* Description */}
+        <p className="text-sm text-foreground/70 mt-5 leading-relaxed">
+          {movie.description}
+        </p>
+
         {/* Cast */}
-        {cast.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold text-foreground mb-3">Cast</h2>
+        {extras.cast.length > 0 && (
+          <div className="mt-7">
+            <h2 className="text-base font-semibold text-foreground mb-3">Cast</h2>
             <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 pb-2">
-              {cast.map((c) => (
+              {extras.cast.map((c) => (
                 <div key={c.id} className="shrink-0 text-center w-16">
-                  <div className="w-14 h-14 rounded-full overflow-hidden bg-secondary mx-auto">
+                  <div className="w-14 h-14 rounded-full overflow-hidden bg-secondary mx-auto ring-2 ring-secondary">
                     {c.profile_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w185${c.profile_path}`}
@@ -161,7 +202,7 @@ const MovieDetail = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm font-medium">
                         {c.name[0]}
                       </div>
                     )}
@@ -176,8 +217,8 @@ const MovieDetail = () => {
 
         {/* More Like This */}
         {moreLikeThis.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold text-foreground mb-3">More Like This</h2>
+          <div className="mt-7">
+            <h2 className="text-base font-semibold text-foreground mb-3">More Like This</h2>
             <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 pb-2">
               {moreLikeThis.map((m) => (
                 <button
@@ -187,21 +228,37 @@ const MovieDetail = () => {
                 >
                   <div className="w-28 h-40 rounded-2xl overflow-hidden bg-secondary transition-transform duration-200 group-active:scale-95">
                     {m.poster_url ? (
-                      <img
-                        src={m.poster_url}
-                        alt={m.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={m.poster_url} alt={m.title} loading="lazy" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">
-                        {m.title}
-                      </div>
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">{m.title}</div>
                     )}
                   </div>
-                  <p className="text-xs text-foreground/70 mt-1.5 w-28 truncate text-left">
-                    {m.title}
-                  </p>
+                  <p className="text-xs text-foreground/70 mt-1.5 w-28 truncate text-left">{m.title}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* For You */}
+        {forYou.length > 0 && (
+          <div className="mt-7">
+            <h2 className="text-base font-semibold text-foreground mb-3">For You</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {forYou.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => navigate(`/movie/${m.id}`)}
+                  className="focus:outline-none group text-left"
+                >
+                  <div className="w-full aspect-[2/3] rounded-xl overflow-hidden bg-secondary transition-transform duration-200 group-active:scale-95">
+                    {m.poster_url ? (
+                      <img src={m.poster_url} alt={m.title} loading="lazy" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">{m.title}</div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-foreground/70 mt-1 truncate">{m.title}</p>
                 </button>
               ))}
             </div>
