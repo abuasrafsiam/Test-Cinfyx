@@ -55,7 +55,7 @@ const FeaturedCarousel = () => {
         </p>
         <div className="flex gap-3">
           <Button
-            onClick={() => navigate(`/watch/${movie.id}`)}
+            onClick={() => navigate(`/movie/${movie.id}`)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-lg px-6"
           >
             <Play className="w-4 h-4 fill-current" />
