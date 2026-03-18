@@ -51,3 +51,52 @@ export async function searchTMDB(query: string): Promise<TMDBMovie[]> {
     genre_text: mapGenres(m.genre_ids),
   }));
 }
+
+export interface TMDBVideo {
+  key: string;
+  site: string;
+  type: string;
+  official: boolean;
+}
+
+export interface TMDBCastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export async function fetchTMDBTrailer(tmdbId: number): Promise<string | null> {
+  const res = await fetch(`${TMDB_BASE}/movie/${tmdbId}/videos?api_key=${TMDB_API_KEY}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const videos: TMDBVideo[] = data.results || [];
+  // Prefer official YouTube trailers
+  const trailer =
+    videos.find((v) => v.site === "YouTube" && v.type === "Trailer" && v.official) ||
+    videos.find((v) => v.site === "YouTube" && v.type === "Trailer") ||
+    videos.find((v) => v.site === "YouTube" && v.type === "Teaser");
+  return trailer ? trailer.key : null;
+}
+
+export async function fetchTMDBCast(tmdbId: number): Promise<TMDBCastMember[]> {
+  const res = await fetch(`${TMDB_BASE}/movie/${tmdbId}/credits?api_key=${TMDB_API_KEY}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.cast || []).slice(0, 10).map((c: TMDBCastMember) => ({
+    id: c.id,
+    name: c.name,
+    character: c.character,
+    profile_path: c.profile_path,
+  }));
+}
+
+export async function searchTMDBByTitle(title: string): Promise<number | null> {
+  const res = await fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.results && data.results.length > 0) {
+    return data.results[0].id;
+  }
+  return null;
+}
