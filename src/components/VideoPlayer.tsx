@@ -19,6 +19,45 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
+  // Auto-play and request landscape on mount
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const playVideo = async () => {
+      try {
+        await v.play();
+        setPlaying(true);
+      } catch {
+        // Autoplay blocked by browser, user will tap play
+      }
+    };
+    playVideo();
+
+    // Request landscape orientation
+    try {
+      screen.orientation?.lock?.("landscape").catch(() => {});
+    } catch {}
+
+    // Request fullscreen
+    const goFullscreen = async () => {
+      try {
+        if (containerRef.current && !document.fullscreenElement) {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+        }
+      } catch {}
+    };
+    goFullscreen();
+
+    return () => {
+      // Unlock orientation on unmount
+      try {
+        screen.orientation?.unlock?.();
+      } catch {}
+    };
+  }, []);
+
   const resetHideTimer = useCallback(() => {
     setShowControls(true);
     clearTimeout(hideTimer.current);
@@ -31,6 +70,13 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     resetHideTimer();
     return () => clearTimeout(hideTimer.current);
   }, [playing, resetHideTimer]);
+
+  // Listen for fullscreen exit
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -61,14 +107,25 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     setCurrentTime(time);
   };
 
+  const handleBack = async () => {
+    const v = videoRef.current;
+    if (v) {
+      v.pause();
+      setPlaying(false);
+    }
+    if (document.fullscreenElement) {
+      try { await document.exitFullscreen(); } catch {}
+    }
+    try { screen.orientation?.unlock?.(); } catch {}
+    navigate(-1);
+  };
+
   const toggleFullscreen = async () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
       await containerRef.current.requestFullscreen();
-      setIsFullscreen(true);
     } else {
       await document.exitFullscreen();
-      setIsFullscreen(false);
     }
   };
 
@@ -81,7 +138,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-screen bg-black flex items-center justify-center"
+      className="relative w-full h-screen bg-background flex items-center justify-center"
       onClick={resetHideTimer}
       onMouseMove={resetHideTimer}
     >
@@ -105,8 +162,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         }`}
       >
         {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/70 to-transparent flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-foreground">
+        <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-background/80 to-transparent flex items-center gap-3">
+          <button onClick={handleBack} className="text-foreground transition-transform active:scale-90">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <span className="text-sm font-medium text-foreground truncate">{title}</span>
@@ -117,7 +174,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
           onClick={togglePlay}
           className="absolute inset-0 flex items-center justify-center"
         >
-          <div className="w-16 h-16 rounded-full bg-primary/80 flex items-center justify-center backdrop-blur-sm">
+          <div className="w-16 h-16 rounded-full bg-primary/80 flex items-center justify-center backdrop-blur-sm transition-transform active:scale-90">
             {playing ? (
               <Pause className="w-7 h-7 text-primary-foreground" />
             ) : (
@@ -127,16 +184,16 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         </button>
 
         {/* Bottom controls */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background/80 to-transparent">
           {/* Progress bar */}
-          <div className="relative w-full h-1 bg-foreground/20 rounded-full mb-3">
+          <div className="relative w-full h-1 bg-muted rounded-full mb-3">
             <div
-              className="absolute h-full bg-foreground/30 rounded-full"
-              style={{ width: `${(buffered / duration) * 100}%` }}
+              className="absolute h-full bg-muted-foreground/30 rounded-full"
+              style={{ width: duration ? `${(buffered / duration) * 100}%` : "0%" }}
             />
             <div
               className="absolute h-full bg-primary rounded-full"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
+              style={{ width: duration ? `${(currentTime / duration) * 100}%` : "0%" }}
             />
             <input
               type="range"
@@ -150,7 +207,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
           </div>
 
           <div className="flex items-center justify-between">
-            <button onClick={togglePlay}>
+            <button onClick={togglePlay} className="transition-transform active:scale-90">
               {playing ? (
                 <Pause className="w-5 h-5 text-foreground" />
               ) : (
@@ -158,11 +215,11 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
               )}
             </button>
 
-            <span className="text-xs text-foreground/80">
+            <span className="text-xs text-muted-foreground">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
 
-            <button onClick={toggleFullscreen}>
+            <button onClick={toggleFullscreen} className="transition-transform active:scale-90">
               {isFullscreen ? (
                 <Minimize className="w-5 h-5 text-foreground" />
               ) : (

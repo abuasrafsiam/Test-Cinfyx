@@ -1,21 +1,29 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Download } from "lucide-react";
+import { ArrowLeft, Play, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMovie } from "@/hooks/useMovies";
+import { useMovie, useMoviesByCategory } from "@/hooks/useMovies";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react";
 
 const MovieDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { data: movie, isLoading } = useMovie(id!);
+  const { data: similarMovies = [] } = useMoviesByCategory(movie?.category || "", );
   const navigate = useNavigate();
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Reset image state when movie changes
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [id]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Skeleton className="h-[50vh] w-full" />
+        <Skeleton className="w-full aspect-video" />
         <div className="p-6 space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-20 w-full" />
         </div>
       </div>
@@ -30,62 +38,116 @@ const MovieDetail = () => {
     );
   }
 
+  const moreLikeThis = similarMovies.filter((m) => m.id !== movie.id).slice(0, 10);
+
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Backdrop */}
-      <div className="relative h-[50vh]">
+    <div className="min-h-screen bg-background pb-24">
+      {/* Backdrop Hero */}
+      <div className="relative w-full aspect-video">
         <img
           src={movie.backdrop_url || movie.poster_url}
           alt={movie.title}
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover transition-opacity duration-700 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setImageLoaded(true)}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/30 to-transparent" />
+
+        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center"
+          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-background/60 backdrop-blur-md flex items-center justify-center transition-transform active:scale-90"
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
+
+        {/* Centered Play button on backdrop */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <button
+            onClick={() => navigate(`/watch/${movie.id}`)}
+            className="w-16 h-16 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center shadow-2xl transition-transform duration-200 hover:scale-110 active:scale-95"
+          >
+            <Play className="w-7 h-7 text-primary-foreground fill-current ml-1" />
+          </button>
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="px-6 -mt-16 relative z-10">
-        <div className="flex gap-4">
-          {movie.poster_url && (
-            <img
-              src={movie.poster_url}
-              alt={movie.title}
-              className="w-28 h-40 rounded-xl object-cover shadow-lg shrink-0"
-            />
+      {/* Content */}
+      <div className="px-5 pt-5">
+        <h1 className="text-xl font-bold text-foreground leading-tight">
+          {movie.title}
+        </h1>
+
+        {/* Metadata */}
+        <div className="flex items-center gap-2 mt-2">
+          {movie.year && (
+            <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-md">
+              {movie.year}
+            </span>
           )}
-          <div className="pt-8">
-            <h1 className="text-2xl font-bold text-foreground">{movie.title}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {movie.year} {movie.genre && `• ${movie.genre}`}
-            </p>
-          </div>
+          {movie.genre && (
+            <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-md">
+              {movie.genre}
+            </span>
+          )}
         </div>
 
-        <div className="flex gap-3 mt-6">
+        {/* Action buttons */}
+        <div className="flex gap-3 mt-5">
           <Button
             onClick={() => navigate(`/watch/${movie.id}`)}
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-xl h-12"
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-2xl h-12 text-base font-semibold shadow-lg shadow-primary/20"
           >
             <Play className="w-5 h-5 fill-current" />
             Play
           </Button>
-          <Button
-            variant="secondary"
-            className="gap-2 rounded-xl h-12 px-6"
-          >
-            <Download className="w-5 h-5" />
-            Download
-          </Button>
+          <button className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center transition-transform active:scale-90">
+            <Heart className="w-5 h-5 text-muted-foreground" />
+          </button>
+          <button className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center transition-transform active:scale-90">
+            <Share2 className="w-5 h-5 text-muted-foreground" />
+          </button>
         </div>
 
-        <p className="text-sm text-foreground/70 mt-6 leading-relaxed">
+        {/* Description */}
+        <p className="text-sm text-foreground/70 mt-5 leading-relaxed line-clamp-4">
           {movie.description}
         </p>
+
+        {/* More Like This */}
+        {moreLikeThis.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">More Like This</h2>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 pb-2">
+              {moreLikeThis.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => navigate(`/movie/${m.id}`)}
+                  className="shrink-0 focus:outline-none group"
+                >
+                  <div className="w-28 h-40 rounded-2xl overflow-hidden bg-secondary transition-transform duration-200 group-active:scale-95">
+                    {m.poster_url ? (
+                      <img
+                        src={m.poster_url}
+                        alt={m.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">
+                        {m.title}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-foreground/70 mt-1.5 w-28 truncate text-left">
+                    {m.title}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
