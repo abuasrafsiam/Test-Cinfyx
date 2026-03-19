@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_config: {
+        Row: {
+          ad_video_url: string | null
+          ads_enabled: boolean
+          created_at: string
+          id: string
+          max_ads_per_video: number
+          midroll_trigger_minutes: number
+          skip_after_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          ad_video_url?: string | null
+          ads_enabled?: boolean
+          created_at?: string
+          id?: string
+          max_ads_per_video?: number
+          midroll_trigger_minutes?: number
+          skip_after_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          ad_video_url?: string | null
+          ads_enabled?: boolean
+          created_at?: string
+          id?: string
+          max_ads_per_video?: number
+          midroll_trigger_minutes?: number
+          skip_after_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           active: boolean
