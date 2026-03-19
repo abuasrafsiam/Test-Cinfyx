@@ -11,8 +11,8 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide on video player
-  if (location.pathname.startsWith("/watch/")) return null;
+  // Hide on video player and admin
+  if (location.pathname.startsWith("/watch/") || location.pathname.startsWith("/admin")) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border">

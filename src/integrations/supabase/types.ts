@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          active: boolean
+          created_at: string
+          expires_at: string | null
+          id: string
+          link: string | null
+          message: string
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          title: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          title?: string
+        }
+        Relationships: []
+      }
       movies: {
         Row: {
           backdrop_url: string | null
@@ -55,6 +85,32 @@ export type Database = {
           year?: string | null
         }
         Relationships: []
+      }
+      play_events: {
+        Row: {
+          created_at: string
+          id: string
+          movie_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movie_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movie_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "play_events_movie_id_fkey"
+            columns: ["movie_id"]
+            isOneToOne: false
+            referencedRelation: "movies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
