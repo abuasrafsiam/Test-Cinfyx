@@ -9,10 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, X, Search, Loader2, ChevronRight, ArrowLeft, Monitor, Film } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Loader2, ChevronRight, ArrowLeft, Monitor, Film, Download } from "lucide-react";
 import { toast } from "sonner";
 import { searchTMDBShows, fetchTMDBShowById, fetchTMDBSeasonEpisodes, fetchTMDBShowTrailer, type TMDBTVShow, type TMDBSeason } from "@/hooks/useTMDBShows";
-import { searchTMDBByTitle, fetchTMDBTrailer } from "@/hooks/useTMDB";
 
 type View = "shows" | "seasons" | "episodes";
 
@@ -40,15 +39,15 @@ const ShowsManager = () => {
 
   // TMDB
   const [tmdbSearch, setTmdbSearch] = useState("");
+  const [tmdbIdInput, setTmdbIdInput] = useState("");
   const [tmdbResults, setTmdbResults] = useState<TMDBTVShow[]>([]);
   const [tmdbLoading, setTmdbLoading] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
 
-  // Conditional hooks - always called but with conditional enabled
   const { data: seasons = [] } = useSeasons(selectedShow?.id || "");
   const { data: episodes = [] } = useEpisodes(selectedSeason?.id || "");
 
-  // TMDB search
+  // TMDB search by name
   const doTmdbSearch = async () => {
     if (!tmdbSearch.trim()) return;
     setTmdbLoading(true);
@@ -57,6 +56,19 @@ const ShowsManager = () => {
       setTmdbResults(results);
       if (results.length === 0) toast("No results found");
     } catch { toast.error("Search failed"); }
+    finally { setTmdbLoading(false); }
+  };
+
+  // TMDB fetch by ID
+  const fetchByTmdbId = async () => {
+    const id = parseInt(tmdbIdInput);
+    if (!id) { toast.error("Enter a valid TMDB ID"); return; }
+    setTmdbLoading(true);
+    try {
+      const data = await fetchTMDBShowById(id);
+      setEditingShow((p) => p ? { ...p, ...data } : p);
+      toast.success(`Fetched: ${data.title}`);
+    } catch { toast.error("Not found on TMDB"); }
     finally { setTmdbLoading(false); }
   };
 
@@ -78,32 +90,44 @@ const ShowsManager = () => {
       const showData = await fetchTMDBShowById(tmdbId);
       const tmdbSeasons = showData.seasons.filter((s: TMDBSeason) => s.season_number > 0);
 
+      let totalEps = 0;
       for (const ts of tmdbSeasons) {
-        const { data: seasonRow, error: sErr } = await supabase.from("seasons").insert([{
-          show_id: showId,
-          season_number: ts.season_number,
-          title: ts.name || `Season ${ts.season_number}`,
-          poster_url: ts.poster_path ? `https://image.tmdb.org/t/p/w500${ts.poster_path}` : "",
-          release_year: ts.air_date ? ts.air_date.split("-")[0] : "",
-        }]).select().single();
-        if (sErr || !seasonRow) continue;
+        // Check if season already exists
+        const existingSeason = seasons.find((s) => s.season_number === ts.season_number);
+        let seasonId: string;
+
+        if (existingSeason) {
+          seasonId = existingSeason.id;
+        } else {
+          const { data: seasonRow, error: sErr } = await supabase.from("seasons").insert([{
+            show_id: showId,
+            season_number: ts.season_number,
+            title: ts.name || `Season ${ts.season_number}`,
+            poster_url: ts.poster_path ? `https://image.tmdb.org/t/p/w500${ts.poster_path}` : "",
+            release_year: ts.air_date ? ts.air_date.split("-")[0] : "",
+          }]).select().single();
+          if (sErr || !seasonRow) continue;
+          seasonId = seasonRow.id;
+        }
 
         const tmdbEps = await fetchTMDBSeasonEpisodes(tmdbId, ts.season_number);
         if (tmdbEps.length > 0) {
           const epPayloads = tmdbEps.map((e) => ({
-            season_id: seasonRow.id,
+            season_id: seasonId,
             episode_number: e.episode_number,
             title: e.name || `Episode ${e.episode_number}`,
             description: e.overview || "",
             thumbnail_url: e.still_path ? `https://image.tmdb.org/t/p/w500${e.still_path}` : "",
             duration: e.runtime ? `${e.runtime}m` : "",
+            video_url: "",
           }));
           await supabase.from("episodes").insert(epPayloads);
+          totalEps += tmdbEps.length;
         }
       }
       queryClient.invalidateQueries({ queryKey: ["seasons"] });
       queryClient.invalidateQueries({ queryKey: ["episodes"] });
-      toast.success(`Imported ${tmdbSeasons.length} seasons from TMDB`);
+      toast.success(`Imported ${tmdbSeasons.length} seasons, ${totalEps} episodes from TMDB`);
     } catch { toast.error("Import failed"); }
     finally { setTmdbLoading(false); }
   };
@@ -210,6 +234,10 @@ const ShowsManager = () => {
   // EPISODE CRUD
   const saveEpisode = async () => {
     if (!editingEpisode || !selectedSeason) return;
+    if (!editingEpisode.video_url?.trim()) {
+      toast.error("Video URL is required for episodes");
+      return;
+    }
     const payload = {
       season_id: selectedSeason.id,
       episode_number: editingEpisode.episode_number || 1,
@@ -239,12 +267,26 @@ const ShowsManager = () => {
     toast.success("Episode deleted");
   };
 
+  // Bulk set video URL for all episodes in a season
+  const [bulkVideoUrl, setBulkVideoUrl] = useState("");
+  const applyBulkVideoUrl = async () => {
+    if (!bulkVideoUrl.trim() || !selectedSeason) return;
+    const epsWithoutVideo = episodes.filter((e) => !e.video_url);
+    for (const ep of epsWithoutVideo) {
+      await supabase.from("episodes").update({ video_url: bulkVideoUrl }).eq("id", ep.id);
+    }
+    queryClient.invalidateQueries({ queryKey: ["episodes"] });
+    toast.success(`Set video URL for ${epsWithoutVideo.length} episodes`);
+    setBulkVideoUrl("");
+  };
+
   const filtered = shows.filter((s) => s.title.toLowerCase().includes(searchFilter.toLowerCase()));
 
   // ====== RENDER ======
 
   // Episodes view
   if (view === "episodes" && selectedShow && selectedSeason) {
+    const epsWithoutVideo = episodes.filter((e) => !e.video_url);
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
@@ -256,11 +298,29 @@ const ShowsManager = () => {
             <p className="text-sm text-muted-foreground">{selectedShow.title} • {episodes.length} episodes</p>
           </div>
           <div className="ml-auto">
-            <Button onClick={() => { setEditingEpisode({ episode_number: episodes.length + 1 }); setIsNewEpisode(true); }} className="gap-2">
+            <Button onClick={() => { setEditingEpisode({ episode_number: episodes.length + 1, video_url: "" }); setIsNewEpisode(true); }} className="gap-2">
               <Plus className="w-4 h-4" /> Add Episode
             </Button>
           </div>
         </div>
+
+        {/* Bulk video URL helper */}
+        {epsWithoutVideo.length > 0 && (
+          <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl">
+            <p className="text-xs font-medium text-primary mb-2">⚠ {epsWithoutVideo.length} episodes missing video URL</p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Bulk set video URL for episodes without one..."
+                value={bulkVideoUrl}
+                onChange={(e) => setBulkVideoUrl(e.target.value)}
+                className="bg-background border-0 flex-1 text-xs"
+              />
+              <Button size="sm" variant="secondary" onClick={applyBulkVideoUrl} disabled={!bulkVideoUrl.trim()}>
+                Apply
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Card>
           <CardContent className="p-0 divide-y divide-border">
@@ -273,7 +333,14 @@ const ShowsManager = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">E{ep.episode_number}: {ep.title}</p>
-                  <p className="text-xs text-muted-foreground">{ep.duration} {ep.video_url ? "• ▶ Video" : "• No video"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {ep.duration && `${ep.duration} • `}
+                    {ep.video_url ? (
+                      <span className="text-green-500">✓ Video set</span>
+                    ) : (
+                      <span className="text-destructive font-medium">✗ No video URL</span>
+                    )}
+                  </p>
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => { setEditingEpisode({ ...ep }); setIsNewEpisode(false); }}><Pencil className="w-4 h-4" /></Button>
                 <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteEpisode(ep.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -311,8 +378,14 @@ const ShowsManager = () => {
                   <Textarea value={editingEpisode.description || ""} onChange={(e) => setEditingEpisode((p) => p ? { ...p, description: e.target.value } : p)} className="bg-secondary border-0 mt-1 min-h-[60px]" />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Video URL</Label>
-                  <Input value={editingEpisode.video_url || ""} onChange={(e) => setEditingEpisode((p) => p ? { ...p, video_url: e.target.value } : p)} className="bg-secondary border-0 mt-1" />
+                  <Label className="text-xs text-foreground font-semibold">Video URL *<span className="text-destructive ml-1">(required)</span></Label>
+                  <Input
+                    value={editingEpisode.video_url || ""}
+                    onChange={(e) => setEditingEpisode((p) => p ? { ...p, video_url: e.target.value } : p)}
+                    placeholder="https://example.com/episode.mp4"
+                    className={`mt-1 border ${editingEpisode.video_url ? "bg-secondary border-green-500/30" : "bg-secondary border-destructive/30"}`}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">MP4 or streamable video link for this episode</p>
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Thumbnail URL</Label>
@@ -337,12 +410,12 @@ const ShowsManager = () => {
           </button>
           <div>
             <h2 className="text-xl font-bold text-foreground">{selectedShow.title}</h2>
-            <p className="text-sm text-muted-foreground">{seasons.length} seasons</p>
+            <p className="text-sm text-muted-foreground">{seasons.length} seasons {selectedShow.tmdb_id ? `• TMDB: ${selectedShow.tmdb_id}` : ""}</p>
           </div>
           <div className="ml-auto flex gap-2">
             {selectedShow.tmdb_id && (
               <Button variant="outline" size="sm" onClick={() => importFromTMDB(selectedShow.id, selectedShow.tmdb_id!)} disabled={tmdbLoading} className="gap-1">
-                {tmdbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />} Import TMDB
+                {tmdbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Import TMDB
               </Button>
             )}
             <Button onClick={() => { setEditingSeason({ season_number: seasons.length + 1, show_id: selectedShow.id }); setIsNewSeason(true); }} className="gap-2">
@@ -369,7 +442,18 @@ const ShowsManager = () => {
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
             ))}
-            {seasons.length === 0 && <p className="p-4 text-sm text-muted-foreground">No seasons yet. {selectedShow.tmdb_id ? 'Click "Import TMDB" to auto-import.' : "Add one manually."}</p>}
+            {seasons.length === 0 && (
+              <div className="p-4">
+                <p className="text-sm text-muted-foreground">
+                  No seasons yet.
+                  {selectedShow.tmdb_id ? (
+                    <> Click <strong>"Import TMDB"</strong> to auto-import all seasons & episodes.</>
+                  ) : (
+                    <> Add seasons manually or set a TMDB ID on the show to auto-import.</>
+                  )}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -421,7 +505,7 @@ const ShowsManager = () => {
           <h2 className="text-xl font-bold text-foreground">Shows</h2>
           <p className="text-sm text-muted-foreground mt-1">{shows.length} shows total</p>
         </div>
-        <Button onClick={() => { setEditingShow({ featured: false }); setIsNewShow(true); setTmdbResults([]); }} className="gap-2"><Plus className="w-4 h-4" /> Add Show</Button>
+        <Button onClick={() => { setEditingShow({ featured: false }); setIsNewShow(true); setTmdbResults([]); setTmdbIdInput(""); }} className="gap-2"><Plus className="w-4 h-4" /> Add Show</Button>
       </div>
 
       <Input placeholder="Filter shows..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="max-w-sm bg-secondary border-0" />
@@ -432,13 +516,17 @@ const ShowsManager = () => {
           {filtered.map((s) => (
             <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => { setSelectedShow(s); setView("seasons"); }}>
               <div className="w-12 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
-                {s.poster_url && <img src={s.poster_url} alt="" className="w-full h-full object-cover" />}
+                {s.poster_url ? <img src={s.poster_url} alt="" className="w-full h-full object-cover" /> : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">{s.title[0]}</div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{s.title}</p>
-                <p className="text-xs text-muted-foreground">{s.release_year} • {s.genre} {s.featured ? "• ⭐ Featured" : ""}</p>
+                <p className="text-xs text-muted-foreground">
+                  {s.release_year} • {s.genre} {s.featured ? "• ⭐" : ""} {s.tmdb_id ? `• TMDB: ${s.tmdb_id}` : ""}
+                </p>
               </div>
-              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingShow({ ...s }); setIsNewShow(false); setShowOnHero(heroItems.some((h) => h.title === s.title)); setTmdbResults([]); }}><Pencil className="w-4 h-4" /></Button>
+              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingShow({ ...s }); setIsNewShow(false); setShowOnHero(heroItems.some((h) => h.title === s.title)); setTmdbResults([]); setTmdbIdInput(s.tmdb_id?.toString() || ""); }}><Pencil className="w-4 h-4" /></Button>
               <Button size="sm" variant="ghost" className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteShow(s.id); }}><Trash2 className="w-4 h-4" /></Button>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </div>
@@ -456,33 +544,40 @@ const ShowsManager = () => {
               <button onClick={() => { setEditingShow(null); setIsNewShow(false); setTmdbResults([]); }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
             </div>
 
-            {/* TMDB search */}
-            {isNewShow && (
-              <div className="mb-5 space-y-3 p-4 bg-secondary/50 rounded-xl border border-border/50">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Auto-fetch from TMDB</p>
-                <div className="flex gap-2">
-                  <Input placeholder="Search TV show..." value={tmdbSearch} onChange={(e) => setTmdbSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doTmdbSearch()} className="bg-background border-0 flex-1" />
-                  <Button onClick={doTmdbSearch} size="sm" variant="secondary" disabled={tmdbLoading}>
-                    {tmdbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </Button>
-                </div>
-                {tmdbResults.length > 0 && (
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {tmdbResults.map((r) => (
-                      <button key={r.id} onClick={() => selectTmdbShow(r)} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-background/80 text-left">
-                        <div className="w-8 h-12 rounded bg-muted shrink-0 overflow-hidden">
-                          {r.poster_path && <img src={`https://image.tmdb.org/t/p/w92${r.poster_path}`} alt="" className="w-full h-full object-cover" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground truncate">{r.name}</p>
-                          <p className="text-xs text-muted-foreground">{r.first_air_date?.split("-")[0]}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+            {/* TMDB fetch section - available for both new and edit */}
+            <div className="mb-5 space-y-3 p-4 bg-secondary/50 rounded-xl border border-border/50">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Auto-fetch from TMDB</p>
+              {/* Fetch by ID */}
+              <div className="flex gap-2">
+                <Input type="number" placeholder="TMDB ID" value={tmdbIdInput} onChange={(e) => setTmdbIdInput(e.target.value)} className="bg-background border-0 flex-1" />
+                <Button onClick={fetchByTmdbId} size="sm" variant="secondary" disabled={tmdbLoading}>
+                  {tmdbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
+                  <span className="ml-1">Fetch</span>
+                </Button>
               </div>
-            )}
+              {/* Search by name */}
+              <div className="flex gap-2">
+                <Input placeholder="Or search by name..." value={tmdbSearch} onChange={(e) => setTmdbSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doTmdbSearch()} className="bg-background border-0 flex-1" />
+                <Button onClick={doTmdbSearch} size="sm" variant="secondary" disabled={tmdbLoading}>
+                  {tmdbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                </Button>
+              </div>
+              {tmdbResults.length > 0 && (
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {tmdbResults.map((r) => (
+                    <button key={r.id} onClick={() => selectTmdbShow(r)} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-background/80 text-left">
+                      <div className="w-8 h-12 rounded bg-muted shrink-0 overflow-hidden">
+                        {r.poster_path && <img src={`https://image.tmdb.org/t/p/w92${r.poster_path}`} alt="" className="w-full h-full object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">{r.name}</p>
+                        <p className="text-xs text-muted-foreground">{r.first_air_date?.split("-")[0]} • TMDB ID: {r.id}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="space-y-4">
               <div>
@@ -504,8 +599,9 @@ const ShowsManager = () => {
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">TMDB ID (optional)</Label>
+                <Label className="text-xs text-muted-foreground">TMDB ID</Label>
                 <Input type="number" value={editingShow.tmdb_id || ""} onChange={(e) => setEditingShow((p) => p ? { ...p, tmdb_id: parseInt(e.target.value) || null } : p)} className="bg-secondary border-0 mt-1" />
+                <p className="text-[11px] text-muted-foreground mt-1">Set this to enable auto-import of seasons & episodes</p>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Poster URL</Label>

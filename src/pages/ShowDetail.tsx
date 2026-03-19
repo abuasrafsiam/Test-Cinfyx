@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Star, Calendar } from "lucide-react";
+import { ArrowLeft, Play, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useShow, useSeasons, useEpisodes, type Season } from "@/hooks/useShows";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
-import { fetchTMDBShowById, fetchTMDBShowTrailer } from "@/hooks/useTMDBShows";
+import { fetchTMDBShowTrailer } from "@/hooks/useTMDBShows";
+import { supabase } from "@/integrations/supabase/client";
 
 const ShowDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ const ShowDetail = () => {
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [firstEpisodeId, setFirstEpisodeId] = useState<string | null>(null);
 
   // Auto-select first season
   useEffect(() => {
@@ -29,6 +31,23 @@ const ShowDetail = () => {
       fetchTMDBShowTrailer(show.tmdb_id).then(setTrailerKey).catch(() => {});
     }
   }, [show?.tmdb_id]);
+
+  // Find first episode (S1E1) for the play button
+  useEffect(() => {
+    if (seasons.length === 0) return;
+    const s1 = seasons[0];
+    supabase
+      .from("episodes")
+      .select("id, video_url")
+      .eq("season_id", s1.id)
+      .order("episode_number", { ascending: true })
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0 && data[0].video_url) {
+          setFirstEpisodeId(data[0].id);
+        }
+      });
+  }, [seasons]);
 
   const { data: episodes = [] } = useEpisodes(activeSeason?.id || "");
 
@@ -103,6 +122,17 @@ const ShowDetail = () => {
           <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">{seasons.length} Seasons</span>
         </div>
 
+        {/* Play S1E1 button */}
+        {firstEpisodeId && (
+          <Button
+            onClick={() => navigate(`/watch/episode/${firstEpisodeId}`)}
+            className="w-full mt-5 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-2xl h-13 text-base font-semibold shadow-lg shadow-primary/20"
+          >
+            <Play className="w-5 h-5 fill-current" />
+            Play S1 E1
+          </Button>
+        )}
+
         {/* Description */}
         <p className="text-sm text-foreground/70 mt-4 leading-relaxed">{show.description}</p>
 
@@ -133,7 +163,12 @@ const ShowDetail = () => {
             <button
               key={ep.id}
               onClick={() => ep.video_url && navigate(`/watch/episode/${ep.id}`)}
-              className="w-full flex gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors text-left group"
+              disabled={!ep.video_url}
+              className={`w-full flex gap-3 p-3 rounded-xl text-left group transition-colors ${
+                ep.video_url
+                  ? "bg-secondary/50 hover:bg-secondary"
+                  : "bg-secondary/20 opacity-50 cursor-not-allowed"
+              }`}
             >
               <div className="w-28 h-16 rounded-lg overflow-hidden bg-muted shrink-0 relative">
                 {ep.thumbnail_url ? (
@@ -148,9 +183,14 @@ const ShowDetail = () => {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">E{ep.episode_number}: {ep.title}</p>
+                <p className="text-sm font-medium text-foreground truncate">
+                  E{ep.episode_number}: {ep.title}
+                </p>
                 <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{ep.description}</p>
-                {ep.duration && <p className="text-xs text-muted-foreground mt-1">{ep.duration}</p>}
+                <div className="flex gap-2 mt-1">
+                  {ep.duration && <span className="text-xs text-muted-foreground">{ep.duration}</span>}
+                  {!ep.video_url && <span className="text-xs text-destructive">No video</span>}
+                </div>
               </div>
             </button>
           ))}
