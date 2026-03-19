@@ -5,26 +5,26 @@ import { Capacitor } from '@capacitor/core';
 const AppSplash = ({ onComplete }: { onComplete: () => void }) => {
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
-    const init = async () => {
-      // Hide native splash once our in-app splash is rendered
-      if (Capacitor.isNativePlatform()) {
-        await SplashScreen.hide({ fadeOutDuration: 300 });
-      }
+    // On native, the Android splash already showed — just hide it and skip
+    if (isNative) {
+      SplashScreen.hide({ fadeOutDuration: 300 });
+      setVisible(false);
+      onComplete();
+      return;
+    }
 
-      // Show in-app splash for ~2.5s then fade out
+    // On web, show our in-app splash for ~2s then fade out
+    setTimeout(() => {
+      setFadeOut(true);
       setTimeout(() => {
-        setFadeOut(true);
-        setTimeout(() => {
-          setVisible(false);
-          onComplete();
-        }, 500);
-      }, 2000);
-    };
-
-    init();
-  }, [onComplete]);
+        setVisible(false);
+        onComplete();
+      }, 500);
+    }, 2000);
+  }, [onComplete, isNative]);
 
   if (!visible) return null;
 
