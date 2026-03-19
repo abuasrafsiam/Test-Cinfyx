@@ -7,6 +7,7 @@ import AnnouncementPopup from "@/components/AnnouncementPopup";
 import Index from "./pages/Index";
 import MoviesPage from "./pages/MoviesPage";
 import ShowsPage from "./pages/ShowsPage";
+import ProfilePage from "./pages/ProfilePage";
 import MovieDetail from "./pages/MovieDetail";
 import Watch from "./pages/Watch";
 import WatchEpisode from "./pages/WatchEpisode";
@@ -24,6 +25,7 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<MoviesPage />} />
         <Route path="/shows" element={<ShowsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/watch/:id" element={<Watch />} />
         <Route path="/watch/episode/:id" element={<WatchEpisode />} />
