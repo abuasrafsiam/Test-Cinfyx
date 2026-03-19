@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, X, Search, Loader2, Film, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Loader2, Film, Eye, Monitor } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchTMDBById, searchTMDB, type TMDBMovie } from "@/hooks/useTMDB";
