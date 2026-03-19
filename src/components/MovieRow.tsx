@@ -27,9 +27,9 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
     return (
       <div className="px-4 mb-8">
         <h2 className="text-lg font-semibold text-foreground mb-3">{title}</h2>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="w-32 h-48 rounded-xl shrink-0" />
+            <Skeleton key={i} className="w-24 h-36 rounded-xl shrink-0" />
           ))}
         </div>
       </div>
@@ -51,7 +51,7 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
 
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto no-scrollbar px-4"
+          className="flex gap-2 overflow-x-auto no-scrollbar px-4"
         >
           {movies.map((movie) => (
             <button
@@ -59,7 +59,7 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
               onClick={() => navigate(`/movie/${movie.id}`)}
               className="shrink-0 group/card focus:outline-none"
             >
-              <div className="w-32 h-48 rounded-xl overflow-hidden bg-secondary relative transition-transform duration-300 group-hover/card:scale-105">
+              <div className="w-24 aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative transition-transform duration-300 group-hover/card:scale-105">
                 {movie.poster_url ? (
                   <img
                     src={movie.poster_url}
@@ -73,7 +73,7 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
                   </div>
                 )}
               </div>
-              <p className="text-xs text-foreground/80 mt-2 w-32 truncate text-left">
+              <p className="text-[10px] text-foreground/80 mt-1 w-24 truncate text-left">
                 {movie.title}
               </p>
             </button>
