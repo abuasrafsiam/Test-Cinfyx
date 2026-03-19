@@ -14,6 +14,7 @@ const ShowDetail = () => {
 
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<Episode | null>(null);
+  const [isPlayerActive, setIsPlayerActive] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const episodeListRef = useRef<HTMLDivElement>(null);
 
