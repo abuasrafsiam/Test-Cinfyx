@@ -22,6 +22,8 @@ export type Database = {
           id: string
           link: string | null
           message: string
+          target_type: string
+          target_value: string | null
           title: string
         }
         Insert: {
@@ -31,6 +33,8 @@ export type Database = {
           id?: string
           link?: string | null
           message?: string
+          target_type?: string
+          target_value?: string | null
           title: string
         }
         Update: {
@@ -40,7 +44,48 @@ export type Database = {
           id?: string
           link?: string | null
           message?: string
+          target_type?: string
+          target_value?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      hero_items: {
+        Row: {
+          active: boolean
+          backdrop_url: string | null
+          created_at: string
+          description: string | null
+          end_time: string | null
+          id: string
+          priority: number
+          start_time: string | null
+          title: string | null
+          video_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          backdrop_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          priority?: number
+          start_time?: string | null
+          title?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          backdrop_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          priority?: number
+          start_time?: string | null
+          title?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }
