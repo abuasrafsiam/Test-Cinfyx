@@ -1,4 +1,4 @@
-name: Build Cinefyx APK
+name: Build Cinefyx APK (Debug)
 
 on:
   push:
@@ -11,18 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repo
+      # 1️⃣ Checkout code
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js (v22 LTS)
+      # 2️⃣ Setup Node.js (required for Capacitor)
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 22
           cache: 'npm'
 
-      # 3️⃣ Setup Java for Gradle
+      # 3️⃣ Setup Java (required for Android build)
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -30,32 +30,25 @@ jobs:
           java-version: 21
 
       # 4️⃣ Install dependencies
-      - name: Install npm packages
+      - name: Install dependencies
         run: npm install
 
-      # 5️⃣ Build web assets
-      - name: Build Vite React app
+      # 5️⃣ Build web app
+      - name: Build web app
         run: npm run build
 
       # 6️⃣ Sync Capacitor
       - name: Capacitor sync
         run: npx cap sync
 
-      # 7️⃣ Optional: Copy Android icon/logo to res/mipmap
-      - name: Copy Android logo
-        run: |
-          if [ -d "android/app/src/main/res/mipmap" ]; then
-            cp -r ./android-logo-res/* android/app/src/main/res/
-          fi
-
-      # 8️⃣ Build Android APK
-      - name: Build Android APK
+      # 7️⃣ Build DEBUG APK (important!)
+      - name: Build Debug APK
         working-directory: android
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleDebug
 
-      # 9️⃣ Upload APK artifact
-      - name: Upload APK Artifact
+      # 8️⃣ Upload APK
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: cinefyx-release-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          name: cinefyx-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
