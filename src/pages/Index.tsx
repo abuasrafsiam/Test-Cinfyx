@@ -5,6 +5,9 @@ import FeaturedCarousel from "@/components/FeaturedCarousel";
 import MovieRow from "@/components/MovieRow";
 import ShowRow from "@/components/ShowRow";
 import { useShows } from "@/hooks/useShows";
+import appLogo from "@/assets/logo.png";
+import ShowRow from "@/components/ShowRow";
+import { useShows } from "@/hooks/useShows";
 
 const categories = [
   { title: "🔥 Trending", category: "Trending" },
