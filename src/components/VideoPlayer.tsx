@@ -316,6 +316,10 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       <video
         ref={videoRef}
         src={url}
+        autoPlay
+        playsInline
+        webkit-playsinline="true"
+        x-webkit-airplay="allow"
         className={`w-full h-full ${showingAd ? "hidden" : ""}`}
         style={{ objectFit: ASPECTS[aspectIdx].value as any }}
         onTimeUpdate={handleTimeUpdate}
@@ -323,8 +327,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onEnded={() => setPlaying(false)}
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
-        onPlaying={() => setIsBuffering(false)}
-        playsInline
+        onPlaying={() => { setIsBuffering(false); setPlaying(true); }}
       />
 
       {/* Hidden preload ad video */}
