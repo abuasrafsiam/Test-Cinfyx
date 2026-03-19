@@ -72,7 +72,7 @@ const ShowDetail = () => {
     <div className="min-h-screen bg-background pb-20">
       {/* Player / Hero area */}
       {isPlaying ? (
-        <div className="w-full aspect-video bg-black relative">
+        <div className="w-full bg-black relative" style={{ aspectRatio: '2828 / 1676' }}>
           <VideoPlayer
             url={activeEpisode.video_url!}
             title={`${show.title} - S${activeSeason?.season_number || 1} E${activeEpisode.episode_number}`}
