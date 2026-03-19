@@ -385,8 +385,14 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                 <button onClick={() => seek(-10)} className="pointer-events-auto w-12 h-12 rounded-full bg-background/30 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                   <RotateCcw className="w-5 h-5 text-foreground" />
                 </button>
-                <button onClick={togglePlay} className="pointer-events-auto w-16 h-16 rounded-full bg-foreground/20 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform">
-                  {playing ? <Pause className="w-8 h-8 text-foreground" /> : <Play className="w-8 h-8 text-foreground ml-1" />}
+                <button onClick={togglePlay} className="pointer-events-auto w-16 h-16 rounded-full bg-foreground/20 backdrop-blur-md flex items-center justify-center active:scale-90 transition-all">
+                  {isBuffering ? (
+                    <Loader2 className="w-8 h-8 text-foreground animate-spin" />
+                  ) : playing ? (
+                    <Pause className="w-8 h-8 text-foreground" />
+                  ) : (
+                    <Play className="w-8 h-8 text-foreground ml-1" />
+                  )}
                 </button>
                 <button onClick={() => seek(10)} className="pointer-events-auto w-12 h-12 rounded-full bg-background/30 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                   <RotateCw className="w-5 h-5 text-foreground" />
