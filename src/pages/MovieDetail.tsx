@@ -28,11 +28,13 @@ const MovieDetail = () => {
     trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null,
   });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   useEffect(() => {
     if (!movie) return;
     setExtras({ trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null });
     setImageLoaded(false);
+    setIframeLoaded(false);
 
     const fetchExtras = async () => {
       const tmdbId = await searchTMDBByTitle(movie.title);
@@ -113,9 +115,10 @@ const MovieDetail = () => {
         {extras.trailerKey ? (
           <iframe
             src={`https://www.youtube.com/embed/${extras.trailerKey}?autoplay=1&mute=1&loop=1&playlist=${extras.trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
-            className="absolute inset-0 w-full h-full border-0 scale-[1.2] origin-center"
+            className={`absolute inset-0 w-full h-full border-0 scale-[1.2] origin-center transition-opacity duration-700 ${iframeLoaded ? "opacity-100" : "opacity-0"}`}
             allow="autoplay; encrypted-media"
             allowFullScreen
+            onLoad={() => setIframeLoaded(true)}
           />
         ) : heroImage ? (
           <img
