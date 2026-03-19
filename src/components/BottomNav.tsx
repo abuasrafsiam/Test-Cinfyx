@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Film, Tv, Search } from "lucide-react";
+import { Home, Search, Film, Tv, User } from "lucide-react";
 
 const tabs = [
   { path: "/", icon: Home, label: "Home" },
+  { path: "/search", icon: Search, label: "Search" },
   { path: "/movies", icon: Film, label: "Movies" },
   { path: "/shows", icon: Tv, label: "Shows" },
-  { path: "/search", icon: Search, label: "Search" },
+  { path: "/profile", icon: User, label: "Me" },
 ];
 
 const BottomNav = () => {
@@ -23,11 +24,11 @@ const BottomNav = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center gap-0.5 px-4 py-1 transition-colors ${
+              className={`flex flex-col items-center gap-0.5 px-3 py-1 transition-colors ${
                 active ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className={`w-5 h-5 transition-transform ${active ? "scale-110" : ""}`} />
               <span className="text-[10px] font-medium">{label}</span>
             </button>
           );
