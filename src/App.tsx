@@ -32,6 +32,7 @@ const AppContent = () => {
         <Route path="/watch/episode/:id" element={<WatchEpisode />} />
         <Route path="/show/:id" element={<ShowDetail />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/downloads" element={<DownloadsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
