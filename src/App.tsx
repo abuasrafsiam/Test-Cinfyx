@@ -1,9 +1,11 @@
+import { useState, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
+import AppSplash from "@/components/AppSplash";
 import Index from "./pages/Index";
 import MoviesPage from "./pages/MoviesPage";
 import ShowsPage from "./pages/ShowsPage";
@@ -20,8 +22,12 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashComplete = useCallback(() => setSplashDone(true), []);
+
   return (
     <>
+      {!splashDone && <AppSplash onComplete={handleSplashComplete} />}
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<MoviesPage />} />
@@ -36,7 +42,7 @@ const AppContent = () => {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <BottomNav />
+      {splashDone && <BottomNav />}
       <AnnouncementPopup />
     </>
   );
