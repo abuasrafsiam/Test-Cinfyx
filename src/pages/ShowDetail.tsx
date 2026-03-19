@@ -79,8 +79,8 @@ const ShowDetail = () => {
       <div className="relative w-full aspect-video overflow-hidden">
         {trailerKey ? (
           <iframe
-            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&loop=1&playlist=${trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
-            className={`absolute inset-0 w-full h-full border-0 scale-[1.2] origin-center transition-opacity duration-700 ${iframeLoaded ? "opacity-100" : "opacity-0"}`}
+            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&loop=1&playlist=${trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&disablekb=1&fs=0`}
+            className={`absolute inset-0 w-full h-full border-0 scale-[1.2] origin-center pointer-events-none transition-opacity duration-700 ${iframeLoaded ? "opacity-100" : "opacity-0"}`}
             allow="autoplay; encrypted-media"
             onLoad={() => setIframeLoaded(true)}
           />
