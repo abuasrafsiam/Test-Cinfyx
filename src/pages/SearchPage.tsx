@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import { useSearchMovies, useMovies } from "@/hooks/useMovies";
-import appLogo from "@/assets/logo.png";
+import appLogo from "@/assets/cinefyx-logo.png";
 
 const SearchPage = () => {
   const [query, setQuery] = useState("");
