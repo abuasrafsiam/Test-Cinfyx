@@ -111,7 +111,7 @@ const MovieDetail = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Hero — Trailer or Backdrop (NEVER poster) */}
-      <div className="relative w-full aspect-video overflow-hidden">
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: '2828 / 1676' }}>
         {extras.trailerKey ? (
           <iframe
             src={`https://www.youtube.com/embed/${extras.trailerKey}?autoplay=1&mute=1&loop=1&playlist=${extras.trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
