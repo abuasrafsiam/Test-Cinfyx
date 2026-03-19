@@ -5,6 +5,8 @@ import { useMovie, useMoviesByCategory, useMovies } from "@/hooks/useMovies";
 import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, type TMDBCastMember } from "@/hooks/useTMDB";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { useDownloads } from "@/hooks/useDownloads";
+import { toast } from "sonner";
 
 interface TMDBExtras {
   trailerKey: string | null;
