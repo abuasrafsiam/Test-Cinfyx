@@ -9,6 +9,7 @@ import { useAdConfig } from "@/hooks/useAdConfig";
 interface VideoPlayerProps {
   url: string;
   title: string;
+  poster?: string;
 }
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -19,7 +20,7 @@ const ASPECTS: { label: string; value: string }[] = [
   { label: "Stretch", value: "fill" },
 ];
 
-const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
+const VideoPlayer = ({ url, title, poster }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const adVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,10 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [activePanel, setActivePanel] = useState<"speed" | "quality" | null>(null);
   const [selectedQuality, setSelectedQuality] = useState("Auto");
   const [seekIndicator, setSeekIndicator] = useState<{ side: "left" | "right"; seconds: number } | null>(null);
+
+  // Loading state
+  const [videoReady, setVideoReady] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   // Ad state
   const [showingAd, setShowingAd] = useState(false);
@@ -76,6 +81,29 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     };
   }, []);
 
+  // Handle video canplay → auto-start
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onCanPlay = () => {
+      setVideoReady(true);
+      setIsBuffering(false);
+      if (v.paused) {
+        v.play().then(() => setPlaying(true)).catch(() => {});
+      }
+    };
+    const onWaiting = () => setIsBuffering(true);
+    const onPlaying = () => setIsBuffering(false);
+    v.addEventListener("canplay", onCanPlay);
+    v.addEventListener("waiting", onWaiting);
+    v.addEventListener("playing", onPlaying);
+    return () => {
+      v.removeEventListener("canplay", onCanPlay);
+      v.removeEventListener("waiting", onWaiting);
+      v.removeEventListener("playing", onPlaying);
+    };
+  }, []);
+
   // Preload ad video
   useEffect(() => {
     if (adConfig?.ads_enabled && adConfig.ad_video_url && adVideoRef.current) {
@@ -89,13 +117,9 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   useEffect(() => {
     if (!adConfig?.ads_enabled || !adConfig.ad_video_url || adTriggered) return;
     if (adsShownCount >= (adConfig.max_ads_per_video || 1)) return;
-
     const triggerSeconds = (adConfig.midroll_trigger_minutes || 10) * 60;
-    const minDuration = 20 * 60; // 20 minutes
-
-    // Don't show ads for short content
+    const minDuration = 20 * 60;
     if (duration > 0 && duration < minDuration) return;
-
     if (currentTime >= triggerSeconds && duration >= minDuration) {
       triggerAd();
     }
@@ -104,22 +128,14 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const triggerAd = () => {
     if (!adConfig || !videoRef.current || !adVideoRef.current) return;
     setAdTriggered(true);
-
-    // Save current position and pause movie
     savedTimeRef.current = videoRef.current.currentTime;
     videoRef.current.pause();
     setPlaying(false);
-
-    // Show ad
     setShowingAd(true);
     setCanSkipAd(false);
     setAdCountdown(adConfig.skip_after_seconds || 5);
-
-    // Play ad video
     adVideoRef.current.currentTime = 0;
     adVideoRef.current.play().catch(() => {});
-
-    // Start countdown
     let count = adConfig.skip_after_seconds || 5;
     adCountdownInterval.current = setInterval(() => {
       count--;
@@ -131,23 +147,17 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     }, 1000);
   };
 
-  const skipAd = () => {
-    endAd();
-  };
+  const skipAd = () => endAd();
 
   const endAd = () => {
     clearInterval(adCountdownInterval.current);
     setShowingAd(false);
     setCanSkipAd(false);
     setAdsShownCount((p) => p + 1);
-
-    // Stop ad video
     if (adVideoRef.current) {
       adVideoRef.current.pause();
       adVideoRef.current.currentTime = 0;
     }
-
-    // Resume movie from saved position
     if (videoRef.current) {
       videoRef.current.currentTime = savedTimeRef.current;
       videoRef.current.play().then(() => setPlaying(true)).catch(() => {});
@@ -231,18 +241,12 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     setActivePanel(null);
   };
 
-  const cycleAspect = () => {
-    setAspectIdx((prev) => (prev + 1) % ASPECTS.length);
-  };
+  const cycleAspect = () => setAspectIdx((prev) => (prev + 1) % ASPECTS.length);
 
   const toggleLock = () => {
     setLocked((prev) => {
-      if (!prev) {
-        setShowControls(false);
-        setActivePanel(null);
-      } else {
-        setShowControls(true);
-      }
+      if (!prev) { setShowControls(false); setActivePanel(null); }
+      else { setShowControls(true); }
       return !prev;
     });
   };
@@ -260,9 +264,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     } else if (tapCount.current >= 2) {
       clearTimeout(doubleTapTimer.current);
       tapCount.current = 0;
-      if (!locked) {
-        seek(side === "left" ? -10 : 10);
-      }
+      if (!locked) seek(side === "left" ? -10 : 10);
     }
   };
 
@@ -280,14 +282,35 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-screen bg-background flex items-center justify-center select-none"
+      className="relative w-full h-screen bg-black flex items-center justify-center select-none"
       onMouseMove={() => { if (!locked && !showingAd) resetHideTimer(); }}
     >
+      {/* Poster background while loading */}
+      {!videoReady && poster && (
+        <img
+          src={poster}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover blur-sm"
+        />
+      )}
+
+      {/* Loading spinner overlay */}
+      {isBuffering && (
+        <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center transition-opacity duration-500 ${videoReady ? "bg-transparent" : "bg-black/60"}`}>
+          <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+          {!videoReady && (
+            <span className="text-xs text-foreground/60 mt-3">Loading…</span>
+          )}
+        </div>
+      )}
+
       {/* Main video */}
       <video
         ref={videoRef}
         src={url}
-        className={`w-full h-full ${showingAd ? "hidden" : ""}`}
+        preload="auto"
+        poster={poster}
+        className={`w-full h-full transition-opacity duration-500 ${showingAd ? "hidden" : ""} ${videoReady ? "opacity-100" : "opacity-0"}`}
         style={{ objectFit: ASPECTS[aspectIdx].value as any }}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
@@ -306,13 +329,11 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       {/* ===== AD OVERLAY ===== */}
       {showingAd && (
         <div className="absolute inset-0 z-50 flex flex-col">
-          {/* Ad label + countdown */}
           <div className="absolute top-4 left-4 z-10">
             <span className="bg-background/70 backdrop-blur-sm text-foreground text-xs font-semibold px-3 py-1.5 rounded-lg">
               Ad
             </span>
           </div>
-
           <div className="absolute top-4 right-4 z-10">
             {!canSkipAd ? (
               <span className="bg-background/70 backdrop-blur-sm text-foreground text-xs font-medium px-3 py-1.5 rounded-lg tabular-nums">
@@ -330,7 +351,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         </div>
       )}
 
-      {/* ===== NORMAL PLAYER CONTROLS (hidden during ad) ===== */}
+      {/* ===== NORMAL PLAYER CONTROLS ===== */}
       {!showingAd && (
         <>
           {/* Double-tap zones */}
