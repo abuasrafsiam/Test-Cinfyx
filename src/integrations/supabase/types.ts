@@ -50,33 +50,45 @@ export type Database = {
       announcements: {
         Row: {
           active: boolean
+          auto_dismiss_seconds: number | null
           created_at: string
           expires_at: string | null
           id: string
+          image_url: string | null
           link: string | null
           message: string
+          notification_type: string
+          scheduled_at: string | null
           target_type: string
           target_value: string | null
           title: string
         }
         Insert: {
           active?: boolean
+          auto_dismiss_seconds?: number | null
           created_at?: string
           expires_at?: string | null
           id?: string
+          image_url?: string | null
           link?: string | null
           message?: string
+          notification_type?: string
+          scheduled_at?: string | null
           target_type?: string
           target_value?: string | null
           title: string
         }
         Update: {
           active?: boolean
+          auto_dismiss_seconds?: number | null
           created_at?: string
           expires_at?: string | null
           id?: string
+          image_url?: string | null
           link?: string | null
           message?: string
+          notification_type?: string
+          scheduled_at?: string | null
           target_type?: string
           target_value?: string | null
           title?: string
