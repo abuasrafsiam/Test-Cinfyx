@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Play, Pause, ArrowLeft, Maximize, Minimize, RotateCcw, RotateCw,
-  Settings, Lock, Unlock, Gauge, Ratio,
+  Settings, Lock, Unlock, Gauge, Ratio, Loader2,
 } from "lucide-react";
 import { useAdConfig } from "@/hooks/useAdConfig";
 
@@ -29,6 +29,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
   const [locked, setLocked] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [aspectIdx, setAspectIdx] = useState(0);
@@ -291,6 +292,9 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
         onEnded={() => setPlaying(false)}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsBuffering(false)}
+        onPlaying={() => setIsBuffering(false)}
         playsInline
       />
 
@@ -381,8 +385,14 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                 <button onClick={() => seek(-10)} className="pointer-events-auto w-12 h-12 rounded-full bg-background/30 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                   <RotateCcw className="w-5 h-5 text-foreground" />
                 </button>
-                <button onClick={togglePlay} className="pointer-events-auto w-16 h-16 rounded-full bg-foreground/20 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform">
-                  {playing ? <Pause className="w-8 h-8 text-foreground" /> : <Play className="w-8 h-8 text-foreground ml-1" />}
+                <button onClick={togglePlay} className="pointer-events-auto w-16 h-16 rounded-full bg-foreground/20 backdrop-blur-md flex items-center justify-center active:scale-90 transition-all">
+                  {isBuffering ? (
+                    <Loader2 className="w-8 h-8 text-foreground animate-spin" />
+                  ) : playing ? (
+                    <Pause className="w-8 h-8 text-foreground" />
+                  ) : (
+                    <Play className="w-8 h-8 text-foreground ml-1" />
+                  )}
                 </button>
                 <button onClick={() => seek(10)} className="pointer-events-auto w-12 h-12 rounded-full bg-background/30 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                   <RotateCw className="w-5 h-5 text-foreground" />
@@ -404,7 +414,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                 <div className="flex items-center justify-between mt-1">
                   <div className="flex items-center gap-1">
                     <button onClick={togglePlay} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
-                      {playing ? <Pause className="w-4 h-4 text-foreground" /> : <Play className="w-4 h-4 text-foreground ml-0.5" />}
+                      {isBuffering ? <Loader2 className="w-4 h-4 text-foreground animate-spin" /> : playing ? <Pause className="w-4 h-4 text-foreground" /> : <Play className="w-4 h-4 text-foreground ml-0.5" />}
                     </button>
                   </div>
                   <div className="flex items-center gap-1">
