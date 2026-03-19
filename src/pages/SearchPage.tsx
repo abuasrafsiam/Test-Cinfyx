@@ -70,7 +70,7 @@ const SearchPage = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/")}
             className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-foreground hover:bg-secondary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
