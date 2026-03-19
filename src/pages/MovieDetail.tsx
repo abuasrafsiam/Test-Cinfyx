@@ -5,6 +5,7 @@ import { useMovie, useMoviesByCategory, useMovies } from "@/hooks/useMovies";
 import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, type TMDBCastMember } from "@/hooks/useTMDB";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface TMDBExtras {
   trailerKey: string | null;
