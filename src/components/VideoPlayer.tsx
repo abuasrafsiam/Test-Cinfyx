@@ -434,8 +434,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                     <button onClick={() => setActivePanel(activePanel === "quality" ? null : "quality")} className="h-8 px-2.5 rounded-lg bg-background/30 backdrop-blur-sm flex items-center gap-1 active:scale-95 transition-transform">
                       <span className="text-[11px] text-foreground/80 font-medium">{selectedQuality}</span>
                     </button>
-                    <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
-                      {isFullscreen ? <Minimize className="w-4 h-4 text-foreground" /> : <Maximize className="w-4 h-4 text-foreground" />}
+                    <button onClick={toggleLandscape} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
+                      <Smartphone className="w-4 h-4 text-foreground rotate-90" />
                     </button>
                   </div>
                 </div>
