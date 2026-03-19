@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import MoviesPage from "./pages/MoviesPage";
 import ShowsPage from "./pages/ShowsPage";
 import ProfilePage from "./pages/ProfilePage";
+import DownloadsPage from "./pages/DownloadsPage";
 import MovieDetail from "./pages/MovieDetail";
 import Watch from "./pages/Watch";
 import WatchEpisode from "./pages/WatchEpisode";
