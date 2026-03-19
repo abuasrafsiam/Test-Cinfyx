@@ -7,8 +7,10 @@ import AnnouncementPopup from "@/components/AnnouncementPopup";
 import Index from "./pages/Index";
 import MovieDetail from "./pages/MovieDetail";
 import Watch from "./pages/Watch";
+import WatchEpisode from "./pages/WatchEpisode";
 import SearchPage from "./pages/SearchPage";
 import AdminPage from "./pages/AdminPage";
+import ShowDetail from "./pages/ShowDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +22,8 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/watch/:id" element={<Watch />} />
+        <Route path="/watch/episode/:id" element={<WatchEpisode />} />
+        <Route path="/show/:id" element={<ShowDetail />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<NotFound />} />

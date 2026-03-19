@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import FeaturedCarousel from "@/components/FeaturedCarousel";
 import MovieRow from "@/components/MovieRow";
+import ShowRow from "@/components/ShowRow";
+import { useShows } from "@/hooks/useShows";
 
 const categories = [
   { title: "🔥 Trending", category: "Trending" },
@@ -14,6 +16,7 @@ const categories = [
 const Index = () => {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const { data: shows = [], isLoading: showsLoading } = useShows();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +35,7 @@ const Index = () => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search movies..."
+            placeholder="Search movies & shows..."
             className="w-full rounded-full bg-secondary pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus:ring-primary transition-colors"
           />
         </div>
@@ -43,6 +46,9 @@ const Index = () => {
         {categories.map(({ title, category }) => (
           <MovieRow key={category} title={title} category={category} />
         ))}
+
+        {/* Shows row */}
+        <ShowRow title="📺 TV Shows" shows={shows} isLoading={showsLoading} />
       </div>
     </div>
   );

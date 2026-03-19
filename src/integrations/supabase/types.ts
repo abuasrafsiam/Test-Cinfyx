@@ -50,6 +50,50 @@ export type Database = {
         }
         Relationships: []
       }
+      episodes: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration: string | null
+          episode_number: number
+          id: string
+          season_id: string
+          thumbnail_url: string | null
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          episode_number?: number
+          id?: string
+          season_id: string
+          thumbnail_url?: string | null
+          title?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          episode_number?: number
+          id?: string
+          season_id?: string
+          thumbnail_url?: string | null
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "episodes_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_items: {
         Row: {
           active: boolean
@@ -156,6 +200,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seasons: {
+        Row: {
+          backdrop_url: string | null
+          created_at: string
+          id: string
+          poster_url: string | null
+          release_year: string | null
+          season_number: number
+          show_id: string
+          title: string | null
+        }
+        Insert: {
+          backdrop_url?: string | null
+          created_at?: string
+          id?: string
+          poster_url?: string | null
+          release_year?: string | null
+          season_number?: number
+          show_id: string
+          title?: string | null
+        }
+        Update: {
+          backdrop_url?: string | null
+          created_at?: string
+          id?: string
+          poster_url?: string | null
+          release_year?: string | null
+          season_number?: number
+          show_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasons_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shows: {
+        Row: {
+          backdrop_url: string | null
+          created_at: string
+          description: string | null
+          featured: boolean | null
+          genre: string | null
+          id: string
+          poster_url: string | null
+          release_year: string | null
+          title: string
+          tmdb_id: number | null
+        }
+        Insert: {
+          backdrop_url?: string | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean | null
+          genre?: string | null
+          id?: string
+          poster_url?: string | null
+          release_year?: string | null
+          title: string
+          tmdb_id?: number | null
+        }
+        Update: {
+          backdrop_url?: string | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean | null
+          genre?: string | null
+          id?: string
+          poster_url?: string | null
+          release_year?: string | null
+          title?: string
+          tmdb_id?: number | null
+        }
+        Relationships: []
       }
     }
     Views: {
