@@ -230,15 +230,6 @@ const HeroManager = () => {
                   className="bg-secondary border-0 mt-1 min-h-[60px]"
                 />
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Backdrop Image URL (fallback)</Label>
-                <Input
-                  value={editing.backdrop_url || ""}
-                  onChange={(e) => update("backdrop_url", e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="bg-secondary border-0 mt-1"
-                />
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground">Start Time (optional)</Label>
