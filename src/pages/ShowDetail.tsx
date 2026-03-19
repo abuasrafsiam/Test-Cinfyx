@@ -136,66 +136,51 @@ const ShowDetail = () => {
         {/* Description */}
         <p className="text-sm text-foreground/70 mt-4 leading-relaxed">{show.description}</p>
 
-        {/* Season tabs */}
+        {/* Season pills */}
         {seasons.length > 0 && (
-          <div className="mt-6">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+          <div className="mt-5">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {seasons.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => setActiveSeason(s)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                     activeSeason?.id === s.id
                       ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
                   }`}
                 >
-                  {s.title || `Season ${s.season_number}`}
+                  S{s.season_number}
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Episodes */}
-        <div className="mt-4 space-y-3">
+        {/* Episodes – compact list */}
+        <div className="mt-3 divide-y divide-border/30">
           {episodes.map((ep) => (
             <button
               key={ep.id}
               onClick={() => ep.video_url && navigate(`/watch/episode/${ep.id}`)}
               disabled={!ep.video_url}
-              className={`w-full flex gap-3 p-3 rounded-xl text-left group transition-colors ${
+              className={`w-full flex items-center justify-between py-3 px-1 text-left transition-colors ${
                 ep.video_url
-                  ? "bg-secondary/50 hover:bg-secondary"
-                  : "bg-secondary/20 opacity-50 cursor-not-allowed"
+                  ? "hover:bg-secondary/40 active:bg-secondary/60"
+                  : "opacity-35 cursor-not-allowed"
               }`}
             >
-              <div className="w-28 h-16 rounded-lg overflow-hidden bg-muted shrink-0 relative">
-                {ep.thumbnail_url ? (
-                  <img src={ep.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">E{ep.episode_number}</div>
-                )}
-                {ep.video_url && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="w-6 h-6 text-white fill-current" />
-                  </div>
-                )}
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-xs font-bold text-muted-foreground w-6 text-center shrink-0">{ep.episode_number}</span>
+                <span className="text-sm font-medium text-foreground truncate">{ep.title}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  E{ep.episode_number}: {ep.title}
-                </p>
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{ep.description}</p>
-                <div className="flex gap-2 mt-1">
-                  {ep.duration && <span className="text-xs text-muted-foreground">{ep.duration}</span>}
-                  {!ep.video_url && <span className="text-xs text-destructive">No video</span>}
-                </div>
-              </div>
+              {ep.video_url && (
+                <Play className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-2" />
+              )}
             </button>
           ))}
           {episodes.length === 0 && activeSeason && (
-            <p className="text-sm text-muted-foreground text-center py-4">No episodes available</p>
+            <p className="text-sm text-muted-foreground text-center py-6">No episodes available</p>
           )}
         </div>
       </div>
