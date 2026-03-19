@@ -329,6 +329,11 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
         onPlaying={() => { setIsBuffering(false); setPlaying(true); }}
+        onError={(e) => {
+          const mediaErr = (e.target as HTMLVideoElement).error;
+          setVideoError(mediaErr?.message || "Failed to load video. The source may be unavailable.");
+          setIsBuffering(false);
+        }}
       />
 
       {/* Hidden preload ad video */}
