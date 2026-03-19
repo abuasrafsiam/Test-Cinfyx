@@ -216,10 +216,18 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     navigate(-1);
   };
 
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    if (!document.fullscreenElement) await containerRef.current.requestFullscreen();
-    else await document.exitFullscreen();
+  const toggleLandscape = async () => {
+    try {
+      const orientation = screen.orientation;
+      if (orientation) {
+        const isLandscape = orientation.type.startsWith("landscape");
+        if (isLandscape) {
+          await orientation.unlock();
+        } else {
+          await orientation.lock("landscape");
+        }
+      }
+    } catch {}
   };
 
   const changeSpeed = (s: number) => {
