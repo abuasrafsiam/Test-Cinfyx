@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Heart, Share2, Star, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, Play, Heart, Share2, Star, Clock, Calendar, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMovie, useMoviesByCategory, useMovies } from "@/hooks/useMovies";
 import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, type TMDBCastMember } from "@/hooks/useTMDB";
