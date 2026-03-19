@@ -56,20 +56,38 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const seekIndicatorTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
-  // Auto-play + landscape on mount
+  // Enter fullscreen + landscape + auto-play on mount
   useEffect(() => {
-    const v = videoRef.current;
-    if (v) {
-      v.load();
-      const playWhenReady = () => {
-        v.play().then(() => setPlaying(true)).catch(() => {});
-      };
-      if (v.readyState >= 2) playWhenReady();
-      else v.addEventListener("canplay", playWhenReady, { once: true });
-    }
-    try { screen.orientation?.lock?.("landscape").catch(() => {}); } catch {}
+    const setup = async () => {
+      // Enter fullscreen first (required for orientation lock on Android)
+      try {
+        if (containerRef.current && !document.fullscreenElement) {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+        }
+      } catch {}
+
+      // Lock to landscape after fullscreen
+      try { await screen.orientation?.lock?.("landscape"); } catch {}
+
+      // Auto-play video
+      const v = videoRef.current;
+      if (v) {
+        v.load();
+        const playWhenReady = () => {
+          v.play().then(() => setPlaying(true)).catch(() => {});
+        };
+        if (v.readyState >= 2) playWhenReady();
+        else v.addEventListener("canplay", playWhenReady, { once: true });
+      }
+    };
+    setup();
+
     return () => {
       try { screen.orientation?.unlock?.(); } catch {}
+      if (document.fullscreenElement) {
+        try { document.exitFullscreen(); } catch {}
+      }
       clearInterval(adCountdownInterval.current);
     };
   }, [url]);
