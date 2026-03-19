@@ -49,9 +49,7 @@ const FeaturedCarousel = () => {
   const isYoutube = hero.video_url && /youtube|youtu\.be/.test(hero.video_url);
 
   return (
-    <div className="relative h-[42vh]">
-      {/* Video container with overflow hidden */}
-      <div className="absolute inset-0 overflow-hidden">
+    <div className="relative h-[42vh] overflow-hidden">
       {/* Video */}
       {embedSrc && isYoutube && (
         <iframe
@@ -81,14 +79,13 @@ const FeaturedCarousel = () => {
       {!embedSrc && (
         <div className="absolute inset-0 bg-secondary" />
       )}
-      </div>
 
-      {/* Gradient - extends below hero */}
-      <div className="absolute inset-x-0 bottom-[-40px] h-[70%] bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none z-[1]" />
+      {/* Gradient */}
+      <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-background via-background/50 to-transparent pointer-events-none" />
 
       {/* Content */}
       {(hero.title || hero.description) && (
-        <div className="absolute inset-x-0 bottom-0 p-5 pb-6 max-w-lg z-[2]">
+        <div className="absolute inset-x-0 bottom-0 p-5 pb-6 max-w-lg">
           {hero.title && (
             <h1 className="text-2xl font-bold text-foreground mb-1 drop-shadow-lg leading-tight">
               {hero.title}
