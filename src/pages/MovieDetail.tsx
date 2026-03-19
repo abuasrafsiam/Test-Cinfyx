@@ -34,6 +34,7 @@ const MovieDetail = () => {
     if (!movie) return;
     setExtras({ trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null });
     setImageLoaded(false);
+    setIframeLoaded(false);
 
     const fetchExtras = async () => {
       const tmdbId = await searchTMDBByTitle(movie.title);
