@@ -285,7 +285,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-screen bg-background flex items-center justify-center select-none"
+      className="relative w-full h-screen bg-black flex items-center justify-center select-none"
       onMouseMove={() => { if (!locked && !showingAd) resetHideTimer(); }}
     >
       {/* Main video */}
