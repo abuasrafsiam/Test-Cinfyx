@@ -186,13 +186,7 @@ const HeroManager = () => {
 
             {/* Live preview */}
             {preview && (
-              <div className="relative h-40 rounded-xl overflow-hidden bg-muted mb-4">
-                {editing.backdrop_url && (
-                  <div
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${editing.backdrop_url})` }}
-                  />
-                )}
+              <div className="relative h-40 rounded-xl overflow-hidden bg-secondary mb-4">
                 <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-background to-transparent" />
                 <div className="absolute bottom-3 left-4">
                   <h3 className="text-base font-bold text-foreground">{editing.title || "Hero Title"}</h3>
