@@ -16,6 +16,7 @@ const ShowDetail = () => {
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const [firstEpisodeId, setFirstEpisodeId] = useState<string | null>(null);
 
   // Auto-select first season
