@@ -421,8 +421,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
 
           {/* Controls overlay */}
           {!locked && (
-            <div className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
+            <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+              <div className="absolute inset-0 bg-background/40 pointer-events-none" />
 
               {/* Top bar */}
               <div className="absolute top-0 left-0 right-0 px-4 py-3 flex items-center justify-between z-10">
