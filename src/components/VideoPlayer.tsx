@@ -213,7 +213,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     if (v) { v.pause(); setPlaying(false); }
     if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch {} }
     try { screen.orientation?.unlock?.(); } catch {}
-    navigate(-1);
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/");
   };
 
   const toggleLandscape = async () => {
