@@ -42,17 +42,17 @@ const ShowRow = ({ title, shows, isLoading }: ShowRowProps) => {
         <button onClick={() => scroll("left")} className="absolute left-0 top-0 bottom-0 z-10 w-10 bg-gradient-to-r from-background to-transparent flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
-        <div ref={scrollRef} className="flex gap-3 overflow-x-auto no-scrollbar px-4">
+        <div ref={scrollRef} className="flex gap-2 overflow-x-auto no-scrollbar px-4">
           {shows.map((show) => (
             <button key={show.id} onClick={() => navigate(`/show/${show.id}`)} className="shrink-0 group/card focus:outline-none">
-              <div className="w-32 h-48 rounded-xl overflow-hidden bg-secondary relative transition-transform duration-300 group-hover/card:scale-105">
+              <div className="w-24 aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative transition-transform duration-300 group-hover/card:scale-105">
                 {show.poster_url ? (
                   <img src={show.poster_url} alt={show.title} loading="lazy" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">{show.title}</div>
                 )}
               </div>
-              <p className="text-xs text-foreground/80 mt-2 w-32 truncate text-left">{show.title}</p>
+              <p className="text-[10px] text-foreground/80 mt-1 w-24 truncate text-left">{show.title}</p>
             </button>
           ))}
         </div>
