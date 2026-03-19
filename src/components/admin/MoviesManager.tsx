@@ -97,7 +97,31 @@ const MoviesManager = () => {
       if (error) { toast.error("Failed to update"); return; }
       toast.success("Movie updated");
     }
+
+    // Handle hero item sync
+    const existingHero = heroItems.find((h) => h.title === editing.title);
+    if (showOnHero && !existingHero) {
+      await supabase.from("hero_items").insert([{
+        title: editing.title,
+        description: editing.description || "",
+        backdrop_url: editing.backdrop_url || "",
+        video_url: editing.video_url || "",
+        priority: heroItems.length,
+        active: true,
+      }]);
+    } else if (!showOnHero && existingHero) {
+      await supabase.from("hero_items").delete().eq("id", existingHero.id);
+    } else if (showOnHero && existingHero) {
+      await supabase.from("hero_items").update({
+        title: editing.title,
+        description: editing.description || "",
+        backdrop_url: editing.backdrop_url || "",
+        video_url: editing.video_url || "",
+      }).eq("id", existingHero.id);
+    }
+
     queryClient.invalidateQueries({ queryKey: ["movies"] });
+    queryClient.invalidateQueries({ queryKey: ["hero_items"] });
     close();
   };
 
