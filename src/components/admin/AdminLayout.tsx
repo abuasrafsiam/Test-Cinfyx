@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Bell, BarChart3, Monitor, ChevronLeft, Menu } from "lucide-react";
+import { Film, Bell, BarChart3, Monitor, ChevronLeft, Menu, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const tabs = [
   { id: "hero", label: "Hero", icon: Monitor },
   { id: "movies", label: "Movies", icon: Film },
+  { id: "shows", label: "Shows", icon: Tv },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
 ] as const;
