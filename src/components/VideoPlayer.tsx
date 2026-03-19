@@ -344,6 +344,30 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onEnded={endAd}
       />
 
+      {/* ===== VIDEO ERROR OVERLAY ===== */}
+      {videoError && !showingAd && (
+        <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center gap-4 px-6">
+          <p className="text-foreground text-sm text-center">{videoError}</p>
+          <button
+            onClick={() => {
+              setVideoError(null);
+              setIsBuffering(true);
+              const v = videoRef.current;
+              if (v) {
+                v.load();
+                v.play().then(() => setPlaying(true)).catch(() => {});
+              }
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg active:scale-95 transition-transform"
+          >
+            Retry
+          </button>
+          <button onClick={handleBack} className="text-muted-foreground text-xs underline">
+            Go back
+          </button>
+        </div>
+      )}
+
       {/* ===== AD OVERLAY ===== */}
       {showingAd && (
         <div className="absolute inset-0 z-50 flex flex-col">
