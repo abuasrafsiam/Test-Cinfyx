@@ -292,6 +292,9 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
         onEnded={() => setPlaying(false)}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsBuffering(false)}
+        onPlaying={() => setIsBuffering(false)}
         playsInline
       />
 
