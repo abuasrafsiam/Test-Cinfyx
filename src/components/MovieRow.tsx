@@ -51,7 +51,7 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
 
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto no-scrollbar px-4"
+          className="flex gap-2 overflow-x-auto no-scrollbar px-4"
         >
           {movies.map((movie) => (
             <button
