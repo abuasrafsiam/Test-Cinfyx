@@ -14,7 +14,6 @@ const ShowDetail = () => {
 
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<Episode | null>(null);
-  const [isPlayerActive, setIsPlayerActive] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const episodeListRef = useRef<HTMLDivElement>(null);
 
@@ -39,21 +38,11 @@ const ShowDetail = () => {
   const handleSeasonChange = (s: Season) => {
     setActiveSeason(s);
     setActiveEpisode(null);
-    setIsPlayerActive(false);
   };
 
   const handleEpisodeSelect = (ep: Episode) => {
     if (!ep.video_url) return;
     setActiveEpisode(ep);
-    setIsPlayerActive(true);
-  };
-
-  const handlePlayFirst = () => {
-    const first = episodes.find((e) => e.video_url);
-    if (first) {
-      setActiveEpisode(first);
-      setIsPlayerActive(true);
-    }
   };
 
   if (isLoading) {
@@ -77,7 +66,7 @@ const ShowDetail = () => {
     );
   }
 
-  const isPlaying = isPlayerActive && activeEpisode?.video_url;
+  const isPlaying = activeEpisode?.video_url;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -142,24 +131,13 @@ const ShowDetail = () => {
         </div>
 
         {/* Now playing info */}
-        {isPlaying && activeEpisode && (
+        {activeEpisode && (
           <div className="mt-3 p-2.5 rounded-xl bg-secondary/50 border border-border/50">
             <p className="text-xs font-semibold text-primary">
               Now Playing: S{activeSeason?.season_number} E{activeEpisode.episode_number}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{activeEpisode.title}</p>
           </div>
-        )}
-
-        {/* Play button */}
-        {!isPlaying && episodes.length > 0 && episodes.some(e => e.video_url) && (
-          <button
-            onClick={handlePlayFirst}
-            className="w-full mt-4 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl h-12 text-sm font-semibold shadow-lg shadow-primary/20 active:scale-95 transition-transform"
-          >
-            <Play className="w-5 h-5 fill-current" />
-            Play S1 E1
-          </button>
         )}
 
         {show.description && !isPlaying && (
