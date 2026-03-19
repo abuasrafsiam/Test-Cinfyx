@@ -56,27 +56,23 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const seekIndicatorTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
-  // Auto-play + landscape + fullscreen on mount
+  // Auto-play + landscape on mount
   useEffect(() => {
     const v = videoRef.current;
     if (v) {
-      v.play().then(() => setPlaying(true)).catch(() => {});
+      v.load();
+      const playWhenReady = () => {
+        v.play().then(() => setPlaying(true)).catch(() => {});
+      };
+      if (v.readyState >= 2) playWhenReady();
+      else v.addEventListener("canplay", playWhenReady, { once: true });
     }
     try { screen.orientation?.lock?.("landscape").catch(() => {}); } catch {}
-    const goFS = async () => {
-      try {
-        if (containerRef.current && !document.fullscreenElement) {
-          await containerRef.current.requestFullscreen();
-          setIsFullscreen(true);
-        }
-      } catch {}
-    };
-    goFS();
     return () => {
       try { screen.orientation?.unlock?.(); } catch {}
       clearInterval(adCountdownInterval.current);
     };
-  }, []);
+  }, [url]);
 
   // Preload ad video
   useEffect(() => {
