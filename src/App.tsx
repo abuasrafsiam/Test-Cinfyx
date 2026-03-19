@@ -14,6 +14,7 @@ import WatchEpisode from "./pages/WatchEpisode";
 import SearchPage from "./pages/SearchPage";
 import AdminPage from "./pages/AdminPage";
 import ShowDetail from "./pages/ShowDetail";
+import DownloadsPage from "./pages/DownloadsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const AppContent = () => {
         <Route path="/watch/episode/:id" element={<WatchEpisode />} />
         <Route path="/show/:id" element={<ShowDetail />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/downloads" element={<DownloadsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

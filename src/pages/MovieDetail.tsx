@@ -1,10 +1,12 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Heart, Share2, Star, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, Play, Heart, Share2, Star, Clock, Calendar, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMovie, useMoviesByCategory, useMovies } from "@/hooks/useMovies";
 import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, type TMDBCastMember } from "@/hooks/useTMDB";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { useDownloads } from "@/hooks/useDownloads";
+import { toast } from "sonner";
 
 interface TMDBExtras {
   trailerKey: string | null;
@@ -28,6 +30,22 @@ const MovieDetail = () => {
     trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null,
   });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { addDownload, isDownloaded } = useDownloads();
+
+  const handleDownload = () => {
+    if (!movie) return;
+    addDownload({
+      id: movie.id,
+      type: "movie",
+      title: movie.title,
+      posterUrl: movie.poster_url,
+      videoUrl: movie.video_url || "",
+    });
+    toast("Download Started", {
+      description: movie.title,
+      action: { label: "See", onClick: () => navigate("/downloads") },
+    });
+  };
 
   useEffect(() => {
     if (!movie) return;
@@ -194,8 +212,14 @@ const MovieDetail = () => {
           <button className="w-13 h-13 rounded-2xl bg-secondary flex items-center justify-center transition-transform active:scale-90">
             <Heart className="w-5 h-5 text-muted-foreground" />
           </button>
-          <button className="w-13 h-13 rounded-2xl bg-secondary flex items-center justify-center transition-transform active:scale-90">
-            <Share2 className="w-5 h-5 text-muted-foreground" />
+          <button
+            onClick={handleDownload}
+            disabled={isDownloaded(movie.id)}
+            className={`w-13 h-13 rounded-2xl flex items-center justify-center transition-transform active:scale-90 ${
+              isDownloaded(movie.id) ? "bg-primary/20" : "bg-secondary"
+            }`}
+          >
+            <Download className={`w-5 h-5 ${isDownloaded(movie.id) ? "text-primary" : "text-muted-foreground"}`} />
           </button>
         </div>
 

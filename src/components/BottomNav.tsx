@@ -1,12 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Film, Tv, User } from "lucide-react";
+import { Home, Film, Download, User } from "lucide-react";
 
 const tabs = [
   { path: "/", icon: Home, label: "Home" },
-  { path: "/search", icon: Search, label: "Search" },
   { path: "/movies", icon: Film, label: "Movies" },
-  { path: "/shows", icon: Tv, label: "Shows" },
-  { path: "/profile", icon: User, label: "Me" },
+  { path: "/downloads", icon: Download, label: "Downloads" },
+  { path: "/profile", icon: User, label: "Profile" },
 ];
 
 const BottomNav = () => {
