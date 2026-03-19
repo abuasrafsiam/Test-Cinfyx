@@ -5,6 +5,7 @@ import { useMovie, useMoviesByCategory, useMovies } from "@/hooks/useMovies";
 import { searchTMDBByTitle, fetchTMDBTrailer, fetchTMDBCast, type TMDBCastMember } from "@/hooks/useTMDB";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface TMDBExtras {
   trailerKey: string | null;
@@ -28,6 +29,7 @@ const MovieDetail = () => {
     trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null,
   });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [playLoading, setPlayLoading] = useState(false);
 
   useEffect(() => {
     if (!movie) return;
@@ -185,11 +187,19 @@ const MovieDetail = () => {
         {/* Play + Actions */}
         <div className="flex gap-3 mt-5">
           <Button
-            onClick={() => navigate(`/watch/${movie.id}`)}
+            onClick={() => {
+              setPlayLoading(true);
+              navigate(`/watch/${movie.id}`);
+            }}
+            disabled={playLoading}
             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-2xl h-13 text-base font-semibold shadow-lg shadow-primary/20"
           >
-            <Play className="w-5 h-5 fill-current" />
-            Play Now
+            {playLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Play className="w-5 h-5 fill-current" />
+            )}
+            {playLoading ? "Loading…" : "Play Now"}
           </Button>
           <button className="w-13 h-13 rounded-2xl bg-secondary flex items-center justify-center transition-transform active:scale-90">
             <Heart className="w-5 h-5 text-muted-foreground" />
