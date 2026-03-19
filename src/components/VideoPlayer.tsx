@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Play, Pause, ArrowLeft, Maximize, Minimize, RotateCcw, RotateCw,
+  Play, Pause, ArrowLeft, RotateCcw, RotateCw,
   Settings, Lock, Unlock, Gauge, Ratio, Loader2,
+  Smartphone,
 } from "lucide-react";
 import { useAdConfig } from "@/hooks/useAdConfig";
 
