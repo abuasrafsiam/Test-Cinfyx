@@ -22,12 +22,8 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const [splashDone, setSplashDone] = useState(false);
-  const handleSplashComplete = useCallback(() => setSplashDone(true), []);
-
   return (
     <>
-      {!splashDone && <AppSplash onComplete={handleSplashComplete} />}
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<MoviesPage />} />
@@ -42,7 +38,7 @@ const AppContent = () => {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {splashDone && <BottomNav />}
+      <BottomNav />
       <AnnouncementPopup />
     </>
   );
