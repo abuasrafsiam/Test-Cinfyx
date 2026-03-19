@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { useActiveAnnouncements } from "@/hooks/useAnnouncements";
+import { useMovie } from "@/hooks/useMovies";
 import { X, ExternalLink, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -7,26 +9,52 @@ const AnnouncementPopup = () => {
   const { data: announcements = [] } = useActiveAnnouncements();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [current, setCurrent] = useState<string | null>(null);
+  const location = useLocation();
+
+  // Get current movie context if on a movie page
+  const movieMatch = location.pathname.match(/\/movie\/([^/]+)/);
+  const currentMovieId = movieMatch?.[1] || null;
+  const { data: currentMovie } = useMovie(currentMovieId || "");
+
+  // Determine current category from the page context
+  const currentCategory = currentMovie?.category || null;
 
   useEffect(() => {
-    // Show first undismissed announcement
     const stored = JSON.parse(localStorage.getItem("dismissed_announcements") || "[]");
     const dismissedSet = new Set<string>(stored);
     setDismissed(dismissedSet);
 
-    const toShow = announcements.find((a) => !dismissedSet.has(a.id));
-    setCurrent(toShow?.id || null);
-  }, [announcements]);
+    // Filter announcements based on targeting
+    const eligible = announcements.filter((a) => {
+      if (dismissedSet.has(a.id)) return false;
+      const type = a.target_type || "all";
+      if (type === "all") return true;
+      if (type === "category") return currentCategory && currentCategory.toLowerCase() === (a.target_value || "").toLowerCase();
+      if (type === "movie") return currentMovieId === a.target_value;
+      return true;
+    });
+
+    setCurrent(eligible[0]?.id || null);
+  }, [announcements, currentMovieId, currentCategory]);
 
   const dismiss = (id: string) => {
     const updated = new Set(dismissed);
     updated.add(id);
     setDismissed(updated);
     localStorage.setItem("dismissed_announcements", JSON.stringify([...updated]));
-    // Show next
-    const next = announcements.find((a) => !updated.has(a.id));
-    setCurrent(next?.id || null);
+    const eligible = announcements.filter((a) => {
+      if (updated.has(a.id)) return false;
+      const type = a.target_type || "all";
+      if (type === "all") return true;
+      if (type === "category") return currentCategory && currentCategory.toLowerCase() === (a.target_value || "").toLowerCase();
+      if (type === "movie") return currentMovieId === a.target_value;
+      return true;
+    });
+    setCurrent(eligible[0]?.id || null);
   };
+
+  // Don't show on admin pages
+  if (location.pathname.startsWith("/admin")) return null;
 
   const announcement = announcements.find((a) => a.id === current);
   if (!announcement) return null;

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Announcement {
@@ -9,6 +9,8 @@ export interface Announcement {
   expires_at: string | null;
   active: boolean;
   created_at: string;
+  target_type: string;
+  target_value: string;
 }
 
 export function useAnnouncements() {
@@ -35,7 +37,6 @@ export function useActiveAnnouncements() {
         .eq("active", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Filter expired client-side
       const now = new Date();
       return (data as Announcement[]).filter(
         (a) => !a.expires_at || new Date(a.expires_at) > now
