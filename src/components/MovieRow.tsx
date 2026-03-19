@@ -27,9 +27,9 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
     return (
       <div className="px-4 mb-8">
         <h2 className="text-lg font-semibold text-foreground mb-3">{title}</h2>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="w-32 h-48 rounded-xl shrink-0" />
+            <Skeleton key={i} className="w-24 h-36 rounded-xl shrink-0" />
           ))}
         </div>
       </div>
