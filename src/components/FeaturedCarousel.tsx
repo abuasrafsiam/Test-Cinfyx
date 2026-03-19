@@ -75,9 +75,12 @@ const FeaturedCarousel = () => {
         />
       )}
 
-      {/* Dark fallback when no video */}
-      {!embedSrc && (
-        <div className="absolute inset-0 bg-secondary" />
+      {/* Backdrop fallback */}
+      {(!embedSrc || !iframeReady) && hero.backdrop_url && (
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-700"
+          style={{ backgroundImage: `url(${hero.backdrop_url})` }}
+        />
       )}
 
       {/* Gradient */}
