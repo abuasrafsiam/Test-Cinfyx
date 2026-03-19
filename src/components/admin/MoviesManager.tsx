@@ -21,8 +21,10 @@ const emptyMovie = {
 
 const MoviesManager = () => {
   const { data: movies = [], isLoading } = useMovies();
+  const { data: heroItems = [] } = useHeroItems();
   const [editing, setEditing] = useState<Partial<Movie> | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [showOnHero, setShowOnHero] = useState(false);
   const [preview, setPreview] = useState(false);
   const queryClient = useQueryClient();
   const [searchFilter, setSearchFilter] = useState("");
