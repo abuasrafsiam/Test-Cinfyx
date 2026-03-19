@@ -56,38 +56,20 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const seekIndicatorTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
-  // Enter fullscreen + landscape + auto-play on mount
+  // Auto-play + landscape on mount
   useEffect(() => {
-    const setup = async () => {
-      // Enter fullscreen first (required for orientation lock on Android)
-      try {
-        if (containerRef.current && !document.fullscreenElement) {
-          await containerRef.current.requestFullscreen();
-          setIsFullscreen(true);
-        }
-      } catch {}
-
-      // Lock to landscape after fullscreen
-      try { await screen.orientation?.lock?.("landscape"); } catch {}
-
-      // Auto-play video
-      const v = videoRef.current;
-      if (v) {
-        v.load();
-        const playWhenReady = () => {
-          v.play().then(() => setPlaying(true)).catch(() => {});
-        };
-        if (v.readyState >= 2) playWhenReady();
-        else v.addEventListener("canplay", playWhenReady, { once: true });
-      }
-    };
-    setup();
-
+    const v = videoRef.current;
+    if (v) {
+      v.load();
+      const playWhenReady = () => {
+        v.play().then(() => setPlaying(true)).catch(() => {});
+      };
+      if (v.readyState >= 2) playWhenReady();
+      else v.addEventListener("canplay", playWhenReady, { once: true });
+    }
+    try { screen.orientation?.lock?.("landscape").catch(() => {}); } catch {}
     return () => {
       try { screen.orientation?.unlock?.(); } catch {}
-      if (document.fullscreenElement) {
-        try { document.exitFullscreen(); } catch {}
-      }
       clearInterval(adCountdownInterval.current);
     };
   }, [url]);
@@ -237,11 +219,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
 
   const toggleLandscape = async () => {
     try {
-      // Ensure fullscreen first (required for orientation lock on Android)
-      if (containerRef.current && !document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      }
       const orientation = screen.orientation;
       if (orientation) {
         const isLandscape = orientation.type.startsWith("landscape");
@@ -316,10 +293,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       <video
         ref={videoRef}
         src={url}
-        autoPlay
-        playsInline
-        webkit-playsinline="true"
-        x-webkit-airplay="allow"
         className={`w-full h-full ${showingAd ? "hidden" : ""}`}
         style={{ objectFit: ASPECTS[aspectIdx].value as any }}
         onTimeUpdate={handleTimeUpdate}
@@ -327,7 +300,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onEnded={() => setPlaying(false)}
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
-        onPlaying={() => { setIsBuffering(false); setPlaying(true); }}
+        onPlaying={() => setIsBuffering(false)}
+        playsInline
       />
 
       {/* Hidden preload ad video */}
