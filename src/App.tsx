@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
 import Index from "./pages/Index";
+import MoviesPage from "./pages/MoviesPage";
+import ShowsPage from "./pages/ShowsPage";
 import MovieDetail from "./pages/MovieDetail";
 import Watch from "./pages/Watch";
 import WatchEpisode from "./pages/WatchEpisode";
@@ -20,6 +22,8 @@ const AppContent = () => {
     <>
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/movies" element={<MoviesPage />} />
+        <Route path="/shows" element={<ShowsPage />} />
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/watch/:id" element={<Watch />} />
         <Route path="/watch/episode/:id" element={<WatchEpisode />} />

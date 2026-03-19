@@ -1,18 +1,18 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Settings } from "lucide-react";
+import { Home, Film, Tv, Search } from "lucide-react";
 
 const tabs = [
   { path: "/", icon: Home, label: "Home" },
+  { path: "/movies", icon: Film, label: "Movies" },
+  { path: "/shows", icon: Tv, label: "Shows" },
   { path: "/search", icon: Search, label: "Search" },
-  { path: "/admin", icon: Settings, label: "Admin" },
 ];
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide on video player and admin
-  if (location.pathname.startsWith("/watch/") || location.pathname.startsWith("/admin")) return null;
+  if (location.pathname.startsWith("/watch") || location.pathname.startsWith("/admin")) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border">
