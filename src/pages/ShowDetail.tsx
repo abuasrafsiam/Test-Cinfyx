@@ -39,11 +39,21 @@ const ShowDetail = () => {
   const handleSeasonChange = (s: Season) => {
     setActiveSeason(s);
     setActiveEpisode(null);
+    setIsPlayerActive(false);
   };
 
   const handleEpisodeSelect = (ep: Episode) => {
     if (!ep.video_url) return;
     setActiveEpisode(ep);
+    setIsPlayerActive(true);
+  };
+
+  const handlePlayFirst = () => {
+    const first = episodes.find((e) => e.video_url);
+    if (first) {
+      setActiveEpisode(first);
+      setIsPlayerActive(true);
+    }
   };
 
   if (isLoading) {
