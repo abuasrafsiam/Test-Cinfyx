@@ -40,7 +40,7 @@ const Index = () => {
               Search movies &amp; shows...
             </div>
           </div>
-        </form>
+        </div>
       </div>
 
       <FeaturedCarousel />
