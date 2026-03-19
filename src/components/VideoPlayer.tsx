@@ -31,7 +31,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
-  const [videoError, setVideoError] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [aspectIdx, setAspectIdx] = useState(0);
@@ -329,11 +328,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
         onPlaying={() => { setIsBuffering(false); setPlaying(true); }}
-        onError={(e) => {
-          const mediaErr = (e.target as HTMLVideoElement).error;
-          setVideoError(mediaErr?.message || "Failed to load video. The source may be unavailable.");
-          setIsBuffering(false);
-        }}
       />
 
       {/* Hidden preload ad video */}
@@ -343,30 +337,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         playsInline
         onEnded={endAd}
       />
-
-      {/* ===== VIDEO ERROR OVERLAY ===== */}
-      {videoError && !showingAd && (
-        <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center gap-4 px-6">
-          <p className="text-foreground text-sm text-center">{videoError}</p>
-          <button
-            onClick={() => {
-              setVideoError(null);
-              setIsBuffering(true);
-              const v = videoRef.current;
-              if (v) {
-                v.load();
-                v.play().then(() => setPlaying(true)).catch(() => {});
-              }
-            }}
-            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg active:scale-95 transition-transform"
-          >
-            Retry
-          </button>
-          <button onClick={handleBack} className="text-muted-foreground text-xs underline">
-            Go back
-          </button>
-        </div>
-      )}
 
       {/* ===== AD OVERLAY ===== */}
       {showingAd && (

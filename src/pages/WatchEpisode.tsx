@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import VideoPlayer from "@/components/VideoPlayer";
 import { supabase } from "@/integrations/supabase/client";
 import type { Episode } from "@/hooks/useShows";
-import { getProxiedVideoUrl } from "@/lib/videoProxy";
 
 const WatchEpisode = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +23,7 @@ const WatchEpisode = () => {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -32,13 +31,13 @@ const WatchEpisode = () => {
 
   if (!episode || !episode.video_url) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Video not available</p>
       </div>
     );
   }
 
-  return <VideoPlayer url={getProxiedVideoUrl(episode.video_url)} title={episode.title} />;
+  return <VideoPlayer url={episode.video_url} title={episode.title} />;
 };
 
 export default WatchEpisode;
