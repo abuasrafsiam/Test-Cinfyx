@@ -27,6 +27,7 @@ const AppContent = () => {
         <Route path="/movies" element={<MoviesPage />} />
         <Route path="/shows" element={<ShowsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/downloads" element={<DownloadsPage />} />
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/watch/:id" element={<Watch />} />
         <Route path="/watch/episode/:id" element={<WatchEpisode />} />
