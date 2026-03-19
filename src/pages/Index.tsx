@@ -12,7 +12,7 @@ const Index = () => {
   return (
     <div className="pb-16">
       <FeaturedCarousel />
-      <div className="mt-6">
+      <div className="-mt-10 relative z-10">
         {categories.map(({ title, category }) => (
           <MovieRow key={category} title={title} category={category} />
         ))}
