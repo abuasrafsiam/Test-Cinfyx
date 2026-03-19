@@ -32,7 +32,7 @@ const SearchPage = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 px-4">
+      <div className="grid grid-cols-4 gap-2 px-4">
         {movies.map((movie) => (
           <button
             key={movie.id}
