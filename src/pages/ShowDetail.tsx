@@ -80,7 +80,7 @@ const ShowDetail = () => {
           />
         </div>
       ) : (
-        <div className="relative w-full aspect-video overflow-hidden">
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '2828 / 1676' }}>
           {show.backdrop_url ? (
             <img
               src={show.backdrop_url}
