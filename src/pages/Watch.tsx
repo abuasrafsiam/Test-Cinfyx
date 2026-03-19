@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { useMovie } from "@/hooks/useMovies";
 import { logPlayEvent } from "@/hooks/usePlayEvents";
+import { getProxiedVideoUrl } from "@/lib/videoProxy";
 
 const Watch = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +17,7 @@ const Watch = () => {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
+      <div className="h-screen bg-black flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -24,13 +25,13 @@ const Watch = () => {
 
   if (!movie || !movie.video_url) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
+      <div className="h-screen bg-black flex items-center justify-center">
         <p className="text-muted-foreground">Video not available</p>
       </div>
     );
   }
 
-  return <VideoPlayer url={movie.video_url} title={movie.title} />;
+  return <VideoPlayer url={getProxiedVideoUrl(movie.video_url)} title={movie.title} />;
 };
 
 export default Watch;
