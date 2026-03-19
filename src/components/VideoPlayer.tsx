@@ -237,6 +237,11 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
 
   const toggleLandscape = async () => {
     try {
+      // Ensure fullscreen first (required for orientation lock on Android)
+      if (containerRef.current && !document.fullscreenElement) {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      }
       const orientation = screen.orientation;
       if (orientation) {
         const isLandscape = orientation.type.startsWith("landscape");
