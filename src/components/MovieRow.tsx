@@ -73,7 +73,7 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
                   </div>
                 )}
               </div>
-              <p className="text-xs text-foreground/80 mt-2 w-32 truncate text-left">
+              <p className="text-[10px] text-foreground/80 mt-1 w-24 truncate text-left">
                 {movie.title}
               </p>
             </button>
