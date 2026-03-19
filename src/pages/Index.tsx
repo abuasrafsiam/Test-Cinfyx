@@ -21,7 +21,7 @@ const Index = () => {
     <div className="pb-16">
       {/* Header with logo + search */}
       <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-        <img src={appLogo} alt="App logo" className="w-9 h-9 rounded-lg shrink-0" />
+        <img src={appLogo} alt="App logo" className="w-14 h-auto shrink-0" />
         <div
           onClick={() => navigate("/search")}
           className="flex-1 relative cursor-pointer"

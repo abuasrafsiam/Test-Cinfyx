@@ -15,7 +15,7 @@ const SearchPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="px-4 pt-3 pb-2 sticky top-0 z-10 bg-background/95 backdrop-blur-sm flex items-center gap-3">
-        <img src={appLogo} alt="App logo" className="w-9 h-9 rounded-lg shrink-0" onClick={() => navigate("/")} />
+        <img src={appLogo} alt="App logo" className="w-14 h-auto shrink-0" onClick={() => navigate("/")} />
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
