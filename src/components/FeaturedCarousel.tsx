@@ -55,8 +55,8 @@ const FeaturedCarousel = () => {
         <iframe
           key={`${hero.id}-${current}`}
           src={embedSrc}
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300%] h-[300%] border-0 transition-opacity duration-1000 ${iframeReady ? "opacity-100" : "opacity-0"}`}
-          style={{ pointerEvents: "none" }}
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-0 transition-opacity duration-1000 ${iframeReady ? "opacity-100" : "opacity-0"}`}
+          style={{ pointerEvents: "none", width: "177.78vh", height: "100vh", minWidth: "100%", minHeight: "100%" }}
           allow="autoplay; encrypted-media"
           onLoad={() => setIframeReady(true)}
         />
