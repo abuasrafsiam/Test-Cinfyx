@@ -101,14 +101,30 @@ const MoviesManager = () => {
     // Handle hero item sync
     const existingHero = heroItems.find((h) => h.title === editing.title);
     if (showOnHero && !existingHero) {
+      // Auto-fetch YouTube trailer from TMDB for hero video
+      let heroVideoUrl = editing.video_url || "";
+      if (!heroVideoUrl) {
+        try {
+          const tmdbId = await searchTMDBByTitle(editing.title!);
+          if (tmdbId) {
+            const trailerKey = await fetchTMDBTrailer(tmdbId);
+            if (trailerKey) {
+              heroVideoUrl = `https://www.youtube.com/watch?v=${trailerKey}`;
+            }
+          }
+        } catch {}
+      }
       await supabase.from("hero_items").insert([{
         title: editing.title,
         description: editing.description || "",
         backdrop_url: editing.backdrop_url || "",
-        video_url: editing.video_url || "",
+        video_url: heroVideoUrl,
         priority: heroItems.length,
         active: true,
       }]);
+      if (heroVideoUrl && !editing.video_url) {
+        toast.success("TMDB trailer auto-set for hero");
+      }
     } else if (!showOnHero && existingHero) {
       await supabase.from("hero_items").delete().eq("id", existingHero.id);
     } else if (showOnHero && existingHero) {
@@ -116,7 +132,6 @@ const MoviesManager = () => {
         title: editing.title,
         description: editing.description || "",
         backdrop_url: editing.backdrop_url || "",
-        video_url: editing.video_url || "",
       }).eq("id", existingHero.id);
     }
 
