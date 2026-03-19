@@ -30,6 +30,22 @@ const MovieDetail = () => {
     trailerKey: null, cast: [], rating: 0, runtime: 0, tagline: "", backdropVariant: null,
   });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { addDownload, isDownloaded } = useDownloads();
+
+  const handleDownload = () => {
+    if (!movie) return;
+    addDownload({
+      id: movie.id,
+      type: "movie",
+      title: movie.title,
+      posterUrl: movie.poster_url,
+      videoUrl: movie.video_url || "",
+    });
+    toast("Download Started", {
+      description: movie.title,
+      action: { label: "See", onClick: () => navigate("/downloads") },
+    });
+  };
 
   useEffect(() => {
     if (!movie) return;
