@@ -88,7 +88,7 @@ const FeaturedCarousel = () => {
 
       {/* Content */}
       {(hero.title || hero.description) && (
-        <div className="absolute inset-x-0 bottom-0 p-5 pb-6 max-w-lg">
+        <div className="absolute inset-x-0 bottom-0 p-5 pb-6 max-w-lg z-[2]">
           {hero.title && (
             <h1 className="text-2xl font-bold text-foreground mb-1 drop-shadow-lg leading-tight">
               {hero.title}
