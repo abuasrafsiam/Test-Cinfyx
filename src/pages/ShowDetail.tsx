@@ -77,7 +77,7 @@ const ShowDetail = () => {
     );
   }
 
-  const isPlaying = activeEpisode?.video_url;
+  const isPlaying = isPlayerActive && activeEpisode?.video_url;
 
   return (
     <div className="min-h-screen bg-background pb-20">
