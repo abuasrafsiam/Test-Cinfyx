@@ -1,10 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useShow, useSeasons, useEpisodes, type Season } from "@/hooks/useShows";
+import { useShow, useSeasons, useEpisodes, type Season, type Episode } from "@/hooks/useShows";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
-import { fetchTMDBShowTrailer } from "@/hooks/useTMDBShows";
+import { useState, useEffect, useRef } from "react";
+import VideoPlayer from "@/components/VideoPlayer";
 import { supabase } from "@/integrations/supabase/client";
 
 const ShowDetail = () => {
@@ -14,9 +13,9 @@ const ShowDetail = () => {
   const navigate = useNavigate();
 
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
-  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [activeEpisode, setActiveEpisode] = useState<Episode | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [firstEpisodeId, setFirstEpisodeId] = useState<string | null>(null);
+  const episodeListRef = useRef<HTMLDivElement>(null);
 
   // Auto-select first season
   useEffect(() => {
@@ -25,40 +24,35 @@ const ShowDetail = () => {
     }
   }, [seasons]);
 
-  // Fetch trailer
-  useEffect(() => {
-    if (show?.tmdb_id) {
-      fetchTMDBShowTrailer(show.tmdb_id).then(setTrailerKey).catch(() => {});
-    }
-  }, [show?.tmdb_id]);
-
-  // Find first episode (S1E1) for the play button
-  useEffect(() => {
-    if (seasons.length === 0) return;
-    const s1 = seasons[0];
-    supabase
-      .from("episodes")
-      .select("id, video_url")
-      .eq("season_id", s1.id)
-      .order("episode_number", { ascending: true })
-      .limit(1)
-      .then(({ data }) => {
-        if (data && data.length > 0 && data[0].video_url) {
-          setFirstEpisodeId(data[0].id);
-        }
-      });
-  }, [seasons]);
-
   const { data: episodes = [] } = useEpisodes(activeSeason?.id || "");
+
+  // Auto-select first episode with video when episodes load
+  useEffect(() => {
+    if (episodes.length > 0 && !activeEpisode) {
+      const first = episodes.find((e) => e.video_url);
+      if (first) setActiveEpisode(first);
+    }
+  }, [episodes]);
+
+  // When season changes, reset active episode
+  const handleSeasonChange = (s: Season) => {
+    setActiveSeason(s);
+    setActiveEpisode(null);
+  };
+
+  const handleEpisodeSelect = (ep: Episode) => {
+    if (!ep.video_url) return;
+    setActiveEpisode(ep);
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Skeleton className="w-full aspect-video" />
-        <div className="p-5 space-y-3">
-          <Skeleton className="h-7 w-3/4" />
+        <div className="p-4 space-y-3">
+          <Skeleton className="h-6 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-12 w-full" />
         </div>
       </div>
     );
@@ -72,132 +66,165 @@ const ShowDetail = () => {
     );
   }
 
+  const isPlaying = activeEpisode?.video_url;
+
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Hero */}
-      <div className="relative w-full aspect-video overflow-hidden">
-        {trailerKey ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&loop=1&playlist=${trailerKey}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
-            className="absolute inset-0 w-full h-full border-0 scale-[1.2] origin-center"
-            allow="autoplay; encrypted-media"
+    <div className="min-h-screen bg-background pb-20">
+      {/* Player / Hero area */}
+      {isPlaying ? (
+        <div className="w-full aspect-video bg-black relative">
+          <VideoPlayer
+            url={activeEpisode.video_url!}
+            title={`${show.title} - S${activeSeason?.season_number || 1} E${activeEpisode.episode_number}`}
+            poster={activeEpisode.thumbnail_url || show.backdrop_url || undefined}
           />
-        ) : show.backdrop_url ? (
-          <img
-            src={show.backdrop_url}
-            alt={show.title}
-            className={`w-full h-full object-cover transition-opacity duration-700 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-            onLoad={() => setImageLoaded(true)}
-          />
-        ) : (
-          <div className="w-full h-full bg-secondary" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
-        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-background/60 backdrop-blur-md flex items-center justify-center">
-          <ArrowLeft className="w-5 h-5 text-foreground" />
-        </button>
-      </div>
-
-      <div className="px-5 -mt-8 relative z-10">
-        {/* Title + poster */}
-        <div className="flex gap-4 items-end">
-          {show.poster_url && (
-            <img src={show.poster_url} alt={show.title} className="w-24 h-36 rounded-2xl object-cover shadow-2xl shrink-0 border-2 border-secondary" />
-          )}
-          <div className="pb-1 min-w-0 flex-1">
-            <h1 className="text-xl font-bold text-foreground leading-tight">{show.title}</h1>
-          </div>
         </div>
-
-        {/* Meta */}
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          {show.release_year && (
-            <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">
-              <Calendar className="w-3 h-3" />{show.release_year}
-            </span>
+      ) : (
+        <div className="relative w-full aspect-video overflow-hidden">
+          {show.backdrop_url ? (
+            <img
+              src={show.backdrop_url}
+              alt={show.title}
+              className={`w-full h-full object-cover transition-opacity duration-700 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              onLoad={() => setImageLoaded(true)}
+            />
+          ) : (
+            <div className="w-full h-full bg-secondary" />
           )}
-          {show.genre && (
-            <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">{show.genre}</span>
-          )}
-          <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">{seasons.length} Seasons</span>
-        </div>
-
-        {/* Play S1E1 button */}
-        {firstEpisodeId && (
-          <Button
-            onClick={() => navigate(`/watch/episode/${firstEpisodeId}`)}
-            className="w-full mt-5 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-2xl h-13 text-base font-semibold shadow-lg shadow-primary/20"
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+          <button
+            onClick={() => {
+              if (window.history.length > 2) navigate(-1);
+              else navigate("/", { replace: true });
+            }}
+            className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-background/60 backdrop-blur-md flex items-center justify-center"
           >
-            <Play className="w-5 h-5 fill-current" />
-            Play S1 E1
-          </Button>
-        )}
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
+        </div>
+      )}
 
-        {/* Description */}
-        <p className="text-sm text-foreground/70 mt-4 leading-relaxed">{show.description}</p>
-
-        {/* Season tabs */}
-        {seasons.length > 0 && (
-          <div className="mt-6">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-              {seasons.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveSeason(s)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                    activeSeason?.id === s.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {s.title || `Season ${s.season_number}`}
-                </button>
-              ))}
+      {/* Show info */}
+      <div className="px-4 pt-3">
+        <div className="flex items-center gap-3">
+          {show.poster_url && !isPlaying && (
+            <img
+              src={show.poster_url}
+              alt={show.title}
+              className="w-16 h-24 rounded-xl object-cover shadow-lg shrink-0 border border-border -mt-10 relative z-10"
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-bold text-foreground leading-tight truncate">{show.title}</h1>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {show.release_year && (
+                <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
+                  <Calendar className="w-3 h-3" />{show.release_year}
+                </span>
+              )}
+              {show.genre && (
+                <span className="text-[11px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">{show.genre}</span>
+              )}
+              <span className="text-[11px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">{seasons.length}S</span>
             </div>
           </div>
+        </div>
+
+        {/* Now playing info */}
+        {activeEpisode && (
+          <div className="mt-3 p-2.5 rounded-xl bg-secondary/50 border border-border/50">
+            <p className="text-xs font-semibold text-primary">
+              Now Playing: S{activeSeason?.season_number} E{activeEpisode.episode_number}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{activeEpisode.title}</p>
+          </div>
         )}
 
-        {/* Episodes */}
-        <div className="mt-4 space-y-3">
-          {episodes.map((ep) => (
-            <button
-              key={ep.id}
-              onClick={() => ep.video_url && navigate(`/watch/episode/${ep.id}`)}
-              disabled={!ep.video_url}
-              className={`w-full flex gap-3 p-3 rounded-xl text-left group transition-colors ${
-                ep.video_url
-                  ? "bg-secondary/50 hover:bg-secondary"
-                  : "bg-secondary/20 opacity-50 cursor-not-allowed"
-              }`}
-            >
-              <div className="w-28 h-16 rounded-lg overflow-hidden bg-muted shrink-0 relative">
-                {ep.thumbnail_url ? (
-                  <img src={ep.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">E{ep.episode_number}</div>
-                )}
-                {ep.video_url && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="w-6 h-6 text-white fill-current" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  E{ep.episode_number}: {ep.title}
-                </p>
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{ep.description}</p>
-                <div className="flex gap-2 mt-1">
-                  {ep.duration && <span className="text-xs text-muted-foreground">{ep.duration}</span>}
-                  {!ep.video_url && <span className="text-xs text-destructive">No video</span>}
-                </div>
-              </div>
-            </button>
-          ))}
-          {episodes.length === 0 && activeSeason && (
-            <p className="text-sm text-muted-foreground text-center py-4">No episodes available</p>
-          )}
+        {show.description && !isPlaying && (
+          <p className="text-xs text-foreground/60 mt-2 leading-relaxed line-clamp-3">{show.description}</p>
+        )}
+      </div>
+
+      {/* Seasons – horizontal scroll */}
+      {seasons.length > 0 && (
+        <div className="mt-4 px-4">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Seasons</h3>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {seasons.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => handleSeasonChange(s)}
+                className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  activeSeason?.id === s.id
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                    : "bg-secondary text-muted-foreground active:scale-95"
+                }`}
+              >
+                {s.title || `Season ${s.season_number}`}
+              </button>
+            ))}
+          </div>
         </div>
+      )}
+
+      {/* Episodes – compact horizontal scroll */}
+      <div className="mt-3 px-4" ref={episodeListRef}>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          Episodes {activeSeason && `· ${activeSeason.title || `Season ${activeSeason.season_number}`}`}
+        </h3>
+        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2">
+          {episodes.map((ep) => {
+            const isActive = activeEpisode?.id === ep.id;
+            const hasVideo = !!ep.video_url;
+            return (
+              <button
+                key={ep.id}
+                onClick={() => handleEpisodeSelect(ep)}
+                disabled={!hasVideo}
+                className={`shrink-0 w-36 rounded-xl overflow-hidden text-left transition-all ${
+                  isActive
+                    ? "ring-2 ring-primary shadow-lg shadow-primary/20"
+                    : hasVideo
+                      ? "active:scale-95"
+                      : "opacity-40 cursor-not-allowed"
+                }`}
+              >
+                {/* Thumbnail */}
+                <div className="w-full h-20 bg-muted relative">
+                  {ep.thumbnail_url ? (
+                    <img src={ep.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg font-bold">
+                      {ep.episode_number}
+                    </div>
+                  )}
+                  {hasVideo && (
+                    <div className={`absolute inset-0 flex items-center justify-center ${isActive ? "bg-primary/20" : "bg-black/20"}`}>
+                      <Play className={`w-5 h-5 fill-current ${isActive ? "text-primary" : "text-white/80"}`} />
+                    </div>
+                  )}
+                  {!hasVideo && (
+                    <div className="absolute bottom-1 right-1">
+                      <span className="text-[9px] bg-destructive/80 text-destructive-foreground px-1 py-0.5 rounded">No video</span>
+                    </div>
+                  )}
+                </div>
+                {/* Info */}
+                <div className="p-2 bg-secondary/50">
+                  <p className={`text-[11px] font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                    E{ep.episode_number}: {ep.title}
+                  </p>
+                  {ep.duration && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{ep.duration}</p>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {episodes.length === 0 && activeSeason && (
+          <p className="text-xs text-muted-foreground text-center py-6">No episodes available</p>
+        )}
       </div>
     </div>
   );
