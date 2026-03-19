@@ -4,7 +4,7 @@ import FeaturedCarousel from "@/components/FeaturedCarousel";
 import MovieRow from "@/components/MovieRow";
 import ShowRow from "@/components/ShowRow";
 import { useShows } from "@/hooks/useShows";
-import appLogo from "@/assets/logo.png";
+import appLogo from "@/assets/cinefyx-logo.png";
 
 const categories = [
   { title: "🔥 Trending", category: "Trending" },
