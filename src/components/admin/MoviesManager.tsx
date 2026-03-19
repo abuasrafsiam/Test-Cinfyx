@@ -287,6 +287,12 @@ const MoviesManager = () => {
                 <Input value={editing.video_url || ""} onChange={(e) => update("video_url", e.target.value)} className="bg-secondary border-0 mt-1" />
               </div>
               <div className="flex items-center gap-3">
+                <Switch checked={showOnHero} onCheckedChange={(v) => setShowOnHero(v)} />
+                <Label className="text-sm text-foreground flex items-center gap-1.5">
+                  <Monitor className="w-3.5 h-3.5" /> Show on Hero Banner
+                </Label>
+              </div>
+              <div className="flex items-center gap-3">
                 <Switch checked={editing.featured || false} onCheckedChange={(v) => update("featured", v)} />
                 <Label className="text-sm text-foreground">Featured on Home</Label>
               </div>
