@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMovies, type Movie } from "@/hooks/useMovies";
+import { useHeroItems } from "@/hooks/useHeroItems";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, X, Search, Loader2, Film, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Loader2, Film, Eye, Monitor } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchTMDBById, searchTMDB, type TMDBMovie } from "@/hooks/useTMDB";
@@ -20,8 +21,10 @@ const emptyMovie = {
 
 const MoviesManager = () => {
   const { data: movies = [], isLoading } = useMovies();
+  const { data: heroItems = [] } = useHeroItems();
   const [editing, setEditing] = useState<Partial<Movie> | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [showOnHero, setShowOnHero] = useState(false);
   const [preview, setPreview] = useState(false);
   const queryClient = useQueryClient();
   const [searchFilter, setSearchFilter] = useState("");
@@ -32,9 +35,16 @@ const MoviesManager = () => {
   const [tmdbResults, setTmdbResults] = useState<(TMDBMovie & { genre_text?: string })[]>([]);
   const [tmdbLoading, setTmdbLoading] = useState(false);
 
-  const openNew = () => { setEditing({ ...emptyMovie }); setIsNew(true); setTmdbResults([]); };
-  const openEdit = (m: Movie) => { setEditing({ ...m }); setIsNew(false); setTmdbResults([]); };
-  const close = () => { setEditing(null); setIsNew(false); setTmdbResults([]); setPreview(false); };
+  const openNew = () => { setEditing({ ...emptyMovie }); setIsNew(true); setShowOnHero(false); setTmdbResults([]); };
+  const openEdit = (m: Movie) => {
+    setEditing({ ...m });
+    setIsNew(false);
+    // Check if this movie already has a hero item
+    const hasHero = heroItems.some((h) => h.title === m.title);
+    setShowOnHero(hasHero);
+    setTmdbResults([]);
+  };
+  const close = () => { setEditing(null); setIsNew(false); setShowOnHero(false); setTmdbResults([]); setPreview(false); };
 
   const fetchById = async () => {
     const id = parseInt(tmdbId);
@@ -87,7 +97,31 @@ const MoviesManager = () => {
       if (error) { toast.error("Failed to update"); return; }
       toast.success("Movie updated");
     }
+
+    // Handle hero item sync
+    const existingHero = heroItems.find((h) => h.title === editing.title);
+    if (showOnHero && !existingHero) {
+      await supabase.from("hero_items").insert([{
+        title: editing.title,
+        description: editing.description || "",
+        backdrop_url: editing.backdrop_url || "",
+        video_url: editing.video_url || "",
+        priority: heroItems.length,
+        active: true,
+      }]);
+    } else if (!showOnHero && existingHero) {
+      await supabase.from("hero_items").delete().eq("id", existingHero.id);
+    } else if (showOnHero && existingHero) {
+      await supabase.from("hero_items").update({
+        title: editing.title,
+        description: editing.description || "",
+        backdrop_url: editing.backdrop_url || "",
+        video_url: editing.video_url || "",
+      }).eq("id", existingHero.id);
+    }
+
     queryClient.invalidateQueries({ queryKey: ["movies"] });
+    queryClient.invalidateQueries({ queryKey: ["hero_items"] });
     close();
   };
 
@@ -251,6 +285,12 @@ const MoviesManager = () => {
               <div>
                 <Label className="text-xs text-muted-foreground">Video URL</Label>
                 <Input value={editing.video_url || ""} onChange={(e) => update("video_url", e.target.value)} className="bg-secondary border-0 mt-1" />
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={showOnHero} onCheckedChange={(v) => setShowOnHero(v)} />
+                <Label className="text-sm text-foreground flex items-center gap-1.5">
+                  <Monitor className="w-3.5 h-3.5" /> Show on Hero Banner
+                </Label>
               </div>
               <div className="flex items-center gap-3">
                 <Switch checked={editing.featured || false} onCheckedChange={(v) => update("featured", v)} />
