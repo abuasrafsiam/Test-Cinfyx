@@ -14,6 +14,7 @@ import WatchEpisode from "./pages/WatchEpisode";
 import SearchPage from "./pages/SearchPage";
 import AdminPage from "./pages/AdminPage";
 import ShowDetail from "./pages/ShowDetail";
+import DownloadsPage from "./pages/DownloadsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
