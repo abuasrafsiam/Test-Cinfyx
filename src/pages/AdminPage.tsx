@@ -3,6 +3,7 @@ import AdminLayout, { type AdminTab } from "@/components/admin/AdminLayout";
 import HeroManager from "@/components/admin/HeroManager";
 import MoviesManager from "@/components/admin/MoviesManager";
 import ShowsManager from "@/components/admin/ShowsManager";
+import AdsManager from "@/components/admin/AdsManager";
 import NotificationsManager from "@/components/admin/NotificationsManager";
 import DashboardStats from "@/components/admin/DashboardStats";
 
@@ -14,6 +15,7 @@ const AdminPage = () => {
       {tab === "hero" && <HeroManager />}
       {tab === "movies" && <MoviesManager />}
       {tab === "shows" && <ShowsManager />}
+      {tab === "ads" && <AdsManager />}
       {tab === "notifications" && <NotificationsManager />}
       {tab === "dashboard" && <DashboardStats />}
     </AdminLayout>
