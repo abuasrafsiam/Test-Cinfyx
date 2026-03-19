@@ -29,6 +29,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
   const [locked, setLocked] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [aspectIdx, setAspectIdx] = useState(0);
