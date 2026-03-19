@@ -59,7 +59,7 @@ const MovieRow = ({ title, category }: MovieRowProps) => {
               onClick={() => navigate(`/movie/${movie.id}`)}
               className="shrink-0 group/card focus:outline-none"
             >
-              <div className="w-32 h-48 rounded-xl overflow-hidden bg-secondary relative transition-transform duration-300 group-hover/card:scale-105">
+              <div className="w-24 aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative transition-transform duration-300 group-hover/card:scale-105">
                 {movie.poster_url ? (
                   <img
                     src={movie.poster_url}
