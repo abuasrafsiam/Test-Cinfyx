@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2, X, Search, Loader2, Film, Eye, Monitor } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { fetchTMDBById, searchTMDB, type TMDBMovie } from "@/hooks/useTMDB";
+import { fetchTMDBById, searchTMDB, searchTMDBByTitle, fetchTMDBTrailer, type TMDBMovie } from "@/hooks/useTMDB";
 
 const emptyMovie = {
   title: "", description: "", poster_url: "", backdrop_url: "",
