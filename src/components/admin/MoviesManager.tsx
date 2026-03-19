@@ -35,9 +35,16 @@ const MoviesManager = () => {
   const [tmdbResults, setTmdbResults] = useState<(TMDBMovie & { genre_text?: string })[]>([]);
   const [tmdbLoading, setTmdbLoading] = useState(false);
 
-  const openNew = () => { setEditing({ ...emptyMovie }); setIsNew(true); setTmdbResults([]); };
-  const openEdit = (m: Movie) => { setEditing({ ...m }); setIsNew(false); setTmdbResults([]); };
-  const close = () => { setEditing(null); setIsNew(false); setTmdbResults([]); setPreview(false); };
+  const openNew = () => { setEditing({ ...emptyMovie }); setIsNew(true); setShowOnHero(false); setTmdbResults([]); };
+  const openEdit = (m: Movie) => {
+    setEditing({ ...m });
+    setIsNew(false);
+    // Check if this movie already has a hero item
+    const hasHero = heroItems.some((h) => h.title === m.title);
+    setShowOnHero(hasHero);
+    setTmdbResults([]);
+  };
+  const close = () => { setEditing(null); setIsNew(false); setShowOnHero(false); setTmdbResults([]); setPreview(false); };
 
   const fetchById = async () => {
     const id = parseInt(tmdbId);
