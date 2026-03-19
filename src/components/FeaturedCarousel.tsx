@@ -49,7 +49,7 @@ const FeaturedCarousel = () => {
   const isYoutube = hero.video_url && /youtube|youtu\.be/.test(hero.video_url);
 
   return (
-    <div className="relative h-[42vh] overflow-hidden">
+    <div className="relative h-[42vh] overflow-visible">
       {/* Video */}
       {embedSrc && isYoutube && (
         <iframe
