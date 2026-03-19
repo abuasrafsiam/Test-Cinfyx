@@ -15,7 +15,7 @@ const FeaturedCarousel = () => {
     if (heroes.length <= 1) return;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % heroes.length);
-    }, 9000);
+    }, 6000);
     return () => clearInterval(timer);
   }, [heroes.length]);
 
