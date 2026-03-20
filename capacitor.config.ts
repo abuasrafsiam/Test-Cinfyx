@@ -18,6 +18,9 @@ const config: CapacitorConfig = {
     },
     ScreenOrientation: {
       // Allow orientation changes
+    },
+    StatusBar: {
+      // Status bar configuration
     }
   }
 };

@@ -6,6 +6,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { useAdConfig } from "@/hooks/useAdConfig";
+import { useImmersiveMode } from "@/hooks/useImmersiveMode";
 import { ScreenOrientation } from "@capacitor/screen-orientation";
 import { Capacitor } from "@capacitor/core";
 
@@ -40,6 +41,9 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [selectedQuality, setSelectedQuality] = useState("Auto");
   const [seekIndicator, setSeekIndicator] = useState<{ side: "left" | "right"; seconds: number } | null>(null);
   const [isLandscape, setIsLandscape] = useState(false);
+
+  // Enable immersive mode (hide status/nav bar)
+  useImmersiveMode();
 
   // Ad state
   const [showingAd, setShowingAd] = useState(false);
@@ -323,9 +327,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     if (tapCount.current === 1) {
       doubleTapTimer.current = setTimeout(() => {
         tapCount.current = 0;
-        if (!locked && showControls) {
-          setShowControls(false);
-        }
       }, 250);
     } else if (tapCount.current >= 2) {
       clearTimeout(doubleTapTimer.current);
@@ -333,6 +334,15 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       if (!locked) {
         seek(side === "left" ? -10 : 10);
       }
+    }
+  };
+
+  const handleContainerClick = () => {
+    if (!locked && showControls) {
+      setShowControls(false);
+    } else if (!locked && !showControls) {
+      setShowControls(true);
+      resetHideTimer();
     }
   };
 
@@ -354,6 +364,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       ref={containerRef}
       className="relative w-full h-screen bg-black flex items-center justify-center select-none"
       onMouseMove={() => { if (!locked && !showingAd) resetHideTimer(); }}
+      onClick={handleContainerClick}
     >
       {/* Loading skeleton */}
       {isBuffering && (

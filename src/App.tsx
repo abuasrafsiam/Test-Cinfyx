@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
+import { useBackButton } from "@/hooks/useBackButton";
 import Index from "./pages/Index";
 import MoviesPage from "./pages/MoviesPage";
 import ShowsPage from "./pages/ShowsPage";
@@ -20,6 +21,8 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  useBackButton();
+  
   return (
     <>
       <Routes>
