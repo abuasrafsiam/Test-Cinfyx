@@ -8,22 +8,24 @@ export function useImmersiveMode() {
 
     const setupImmersive = async () => {
       try {
-        // Hide status bar and navigation bar
+        // Hide status bar for immersive video experience
         await StatusBar.hide();
         // Set dark style so text is light
         await StatusBar.setStyle({ style: Style.Dark });
-        // Make status bar overlay the content
-        await StatusBar.setOverlaysWebView({ overlay: true });
+        // Ensure status bar doesn't overlay content when shown
+        await StatusBar.setOverlaysWebView({ overlay: false });
       } catch {}
     };
 
     setupImmersive();
 
     return () => {
-      // Show status bar when leaving
+      // Restore status bar when leaving video player
       const restoreUI = async () => {
         try {
           await StatusBar.show();
+          // Ensure content is properly positioned below status bar
+          await StatusBar.setOverlaysWebView({ overlay: false });
         } catch {}
       };
       restoreUI();

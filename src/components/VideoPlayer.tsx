@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Play, Pause, ArrowLeft, RotateCcw, RotateCw,
   Settings, Lock, Unlock, Gauge, Ratio, Loader2,
-  Smartphone,
+  Smartphone, Sun, Volume2,
 } from "lucide-react";
 import { useAdConfig } from "@/hooks/useAdConfig";
 import { useImmersiveMode } from "@/hooks/useImmersiveMode";
@@ -42,6 +42,13 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [selectedQuality, setSelectedQuality] = useState("Auto");
   const [seekIndicator, setSeekIndicator] = useState<{ side: "left" | "right"; seconds: number } | null>(null);
   const [isLandscape, setIsLandscape] = useState(false);
+  
+  // Gesture controls state
+  const [brightness, setBrightness] = useState(100);
+  const [volume, setVolume] = useState(100);
+  const [displayBrightness, setDisplayBrightness] = useState<number | null>(null);
+  const [displayVolume, setDisplayVolume] = useState<number | null>(null);
+  const [isProcessingGesture, setIsProcessingGesture] = useState(false);
 
   // Enable immersive mode (hide status/nav bar)
   useImmersiveMode();
@@ -62,6 +69,11 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const doubleTapTimer = useRef<ReturnType<typeof setTimeout>>();
   const tapCount = useRef(0);
   const seekIndicatorTimer = useRef<ReturnType<typeof setTimeout>>();
+  const brightnessTimer = useRef<ReturnType<typeof setTimeout>>();
+  const volumeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const touchStartY = useRef(0);
+  const touchStartX = useRef(0);
+  const gestureTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
   // Enter fullscreen + landscape + auto-play on mount
@@ -347,6 +359,56 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    touchStartY.current = touch.clientY;
+    touchStartX.current = touch.clientX;
+    setIsProcessingGesture(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!e.touches[0] || locked) return;
+
+    const currentY = e.touches[0].clientY;
+    const currentX = e.touches[0].clientX;
+    const deltaY = touchStartY.current - currentY;
+    const deltaX = currentX - touchStartX.current;
+    const containerHeight = containerRef.current?.clientHeight || 1;
+    const containerWidth = containerRef.current?.clientWidth || 1;
+    const isLeftSide = touchStartX.current < containerWidth / 2;
+
+    // Detect gesture type: vertical (brightness/volume) vs horizontal (seek)
+    const isVerticalGesture = Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 5;
+
+    if (isVerticalGesture && !isProcessingGesture) {
+      setIsProcessingGesture(true);
+      if (isLeftSide) {
+        // Left side: brightness control
+        const percentChange = (deltaY / containerHeight) * 100;
+        const newBrightness = Math.max(0, Math.min(100, brightness + percentChange));
+        setBrightness(newBrightness);
+        setDisplayBrightness(Math.round(newBrightness));
+        clearTimeout(brightnessTimer.current);
+      } else {
+        // Right side: volume control
+        const percentChange = (deltaY / containerHeight) * 100;
+        const newVolume = Math.max(0, Math.min(100, volume + percentChange));
+        setVolume(newVolume);
+        setDisplayVolume(Math.round(newVolume));
+        if (videoRef.current) {
+          videoRef.current.volume = newVolume / 100;
+        }
+        clearTimeout(volumeTimer.current);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsProcessingGesture(false);
+    brightnessTimer.current = setTimeout(() => setDisplayBrightness(null), 1000);
+    volumeTimer.current = setTimeout(() => setDisplayVolume(null), 1000);
+  };
+
 
 
   const formatTime = (s: number) => {
@@ -366,6 +428,10 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       className="relative w-full h-screen bg-black flex items-center justify-center select-none"
       onMouseMove={() => { if (!locked && !showingAd) resetHideTimer(); }}
       onClick={handleContainerClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ filter: `brightness(${brightness}%)` }}
     >
       {/* Loading skeleton - only show on initial load */}
       {isBuffering && !hasStartedPlaying && (
@@ -446,6 +512,32 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
             <div className={`absolute top-1/2 -translate-y-1/2 ${seekIndicator.side === "left" ? "left-16" : "right-16"} flex flex-col items-center animate-fade-in`}>
               {seekIndicator.side === "left" ? <RotateCcw className="w-8 h-8 text-foreground/80" /> : <RotateCw className="w-8 h-8 text-foreground/80" />}
               <span className="text-xs text-foreground/80 mt-1">{seekIndicator.seconds}s</span>
+            </div>
+          )}
+
+          {/* Brightness overlay */}
+          {displayBrightness !== null && (
+            <div className="absolute left-8 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-3 animate-fade-in">
+              <div className="w-28 px-4 py-6 rounded-xl bg-black/70 backdrop-blur-md flex flex-col items-center gap-3 border border-foreground/20">
+                <Sun className="w-6 h-6 text-yellow-400" />
+                <div className="w-20 h-1.5 bg-foreground/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${displayBrightness}%` }} />
+                </div>
+                <span className="text-sm font-semibold text-foreground">{displayBrightness}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Volume overlay */}
+          {displayVolume !== null && (
+            <div className="absolute right-8 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-3 animate-fade-in">
+              <div className="w-28 px-4 py-6 rounded-xl bg-black/70 backdrop-blur-md flex flex-col items-center gap-3 border border-foreground/20">
+                <Volume2 className="w-6 h-6 text-blue-400" />
+                <div className="w-20 h-1.5 bg-foreground/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-400 rounded-full" style={{ width: `${displayVolume}%` }} />
+                </div>
+                <span className="text-sm font-semibold text-foreground">{displayVolume}%</span>
+              </div>
             </div>
           )}
 
