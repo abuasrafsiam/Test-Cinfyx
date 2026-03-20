@@ -24,7 +24,7 @@ const ShowDetail = () => {
     if (seasons.length > 0 && !activeSeason) {
       setActiveSeason(seasons[0]);
     }
-  }, [seasons]);
+  }, [seasons, activeSeason]);
 
   // Fetch trailer
   useEffect(() => {

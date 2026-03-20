@@ -71,7 +71,7 @@ const MovieDetail = () => {
       });
     };
     fetchExtras();
-  }, [movie?.title, movie?.id]);
+  }, [movie]);
 
   if (isLoading) {
     return (

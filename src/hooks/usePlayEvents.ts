@@ -26,11 +26,12 @@ export function usePlayStats() {
 
       // Aggregate
       const countMap: Record<string, number> = {};
-      (events || []).forEach((e: any) => {
+      (events || []).forEach((e: { movie_id: string }) => {
         countMap[e.movie_id] = (countMap[e.movie_id] || 0) + 1;
       });
 
-      const stats: PlayStat[] = (movies || []).map((m: any) => ({
+      interface MovieData { id: string; title: string; poster_url: string | null }
+      const stats: PlayStat[] = (movies || []).map((m: MovieData) => ({
         movie_id: m.id,
         title: m.title,
         poster_url: m.poster_url || "",

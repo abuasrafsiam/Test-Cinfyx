@@ -69,14 +69,16 @@ export async function fetchTMDBSeasonEpisodes(tmdbId: number, seasonNumber: numb
   }));
 }
 
+interface TMDBVideo { site: string; type: string; official?: boolean; key: string }
+
 export async function fetchTMDBShowTrailer(tmdbId: number): Promise<string | null> {
   const res = await fetch(`${TMDB_BASE}/tv/${tmdbId}/videos?api_key=${TMDB_API_KEY}`);
   if (!res.ok) return null;
   const data = await res.json();
-  const videos = data.results || [];
+  const videos: TMDBVideo[] = data.results || [];
   const trailer =
-    videos.find((v: any) => v.site === "YouTube" && v.type === "Trailer" && v.official) ||
-    videos.find((v: any) => v.site === "YouTube" && v.type === "Trailer") ||
-    videos.find((v: any) => v.site === "YouTube" && v.type === "Teaser");
+    videos.find((v: TMDBVideo) => v.site === "YouTube" && v.type === "Trailer" && v.official) ||
+    videos.find((v: TMDBVideo) => v.site === "YouTube" && v.type === "Trailer") ||
+    videos.find((v: TMDBVideo) => v.site === "YouTube" && v.type === "Teaser");
   return trailer ? trailer.key : null;
 }
