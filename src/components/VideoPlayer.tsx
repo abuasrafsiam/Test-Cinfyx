@@ -1,9 +1,8 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Play, Pause, ArrowLeft, RotateCcw, RotateCw,
+  Play, Pause, ArrowLeft, Maximize, Minimize, RotateCcw, RotateCw,
   Settings, Lock, Unlock, Gauge, Ratio, Loader2,
-  Smartphone,
 } from "lucide-react";
 import { useAdConfig } from "@/hooks/useAdConfig";
 
@@ -56,23 +55,27 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const seekIndicatorTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
-  // Auto-play + landscape on mount
+  // Auto-play + landscape + fullscreen on mount
   useEffect(() => {
     const v = videoRef.current;
     if (v) {
-      v.load();
-      const playWhenReady = () => {
-        v.play().then(() => setPlaying(true)).catch(() => {});
-      };
-      if (v.readyState >= 2) playWhenReady();
-      else v.addEventListener("canplay", playWhenReady, { once: true });
+      v.play().then(() => setPlaying(true)).catch(() => {});
     }
     try { screen.orientation?.lock?.("landscape").catch(() => {}); } catch {}
+    const goFS = async () => {
+      try {
+        if (containerRef.current && !document.fullscreenElement) {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+        }
+      } catch {}
+    };
+    goFS();
     return () => {
       try { screen.orientation?.unlock?.(); } catch {}
       clearInterval(adCountdownInterval.current);
     };
-  }, [url]);
+  }, []);
 
   // Preload ad video
   useEffect(() => {
@@ -216,18 +219,10 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     navigate(-1);
   };
 
-  const toggleLandscape = async () => {
-    try {
-      const orientation = screen.orientation;
-      if (orientation) {
-        const isLandscape = orientation.type.startsWith("landscape");
-        if (isLandscape) {
-          await orientation.unlock();
-        } else {
-          await orientation.lock("landscape");
-        }
-      }
-    } catch {}
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) await containerRef.current.requestFullscreen();
+    else await document.exitFullscreen();
   };
 
   const changeSpeed = (s: number) => {
@@ -285,7 +280,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-screen bg-black flex items-center justify-center select-none"
+      className="relative w-full h-screen bg-background flex items-center justify-center select-none"
       onMouseMove={() => { if (!locked && !showingAd) resetHideTimer(); }}
     >
       {/* Main video */}
@@ -434,8 +429,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                     <button onClick={() => setActivePanel(activePanel === "quality" ? null : "quality")} className="h-8 px-2.5 rounded-lg bg-background/30 backdrop-blur-sm flex items-center gap-1 active:scale-95 transition-transform">
                       <span className="text-[11px] text-foreground/80 font-medium">{selectedQuality}</span>
                     </button>
-                    <button onClick={toggleLandscape} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
-                      <Smartphone className="w-4 h-4 text-foreground rotate-90" />
+                    <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
+                      {isFullscreen ? <Minimize className="w-4 h-4 text-foreground" /> : <Maximize className="w-4 h-4 text-foreground" />}
                     </button>
                   </div>
                 </div>
