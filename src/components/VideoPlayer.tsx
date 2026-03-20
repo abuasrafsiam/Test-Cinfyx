@@ -283,8 +283,16 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       doubleTapTimer.current = setTimeout(() => {
         tapCount.current = 0;
         if (!locked) {
-          setShowControls((p) => !p);
-          if (!showControls) resetHideTimer();
+          if (showControls) {
+            // Fade out immediately
+            setShowControls(false);
+            setActivePanel(null);
+            clearTimeout(hideTimer.current);
+          } else {
+            // Fade in and start auto-hide timer
+            setShowControls(true);
+            resetHideTimer();
+          }
         }
       }, 250);
     } else if (tapCount.current >= 2) {
