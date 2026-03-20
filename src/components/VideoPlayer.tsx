@@ -283,8 +283,16 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       doubleTapTimer.current = setTimeout(() => {
         tapCount.current = 0;
         if (!locked) {
-          setShowControls((p) => !p);
-          if (!showControls) resetHideTimer();
+          if (showControls) {
+            // Fade out immediately
+            setShowControls(false);
+            setActivePanel(null);
+            clearTimeout(hideTimer.current);
+          } else {
+            // Fade in and start auto-hide timer
+            setShowControls(true);
+            resetHideTimer();
+          }
         }
       }, 250);
     } else if (tapCount.current >= 2) {
@@ -447,7 +455,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                 <button onClick={() => seek(-10)} className="pointer-events-auto w-12 h-12 rounded-full bg-background/30 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                   <RotateCcw className="w-5 h-5 text-foreground" />
                 </button>
-                <button onClick={togglePlay} className="pointer-events-auto w-16 h-16 rounded-full bg-foreground/20 backdrop-blur-md flex items-center justify-center active:scale-90 transition-all">
+                <button onClick={togglePlay} className="pointer-events-auto w-16 h-16 rounded-full flex items-center justify-center active:scale-90 transition-all">
                   {isBuffering ? (
                     <Loader2 className="w-8 h-8 text-foreground animate-spin" />
                   ) : playing ? (
@@ -476,7 +484,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                 <div className="flex items-center justify-between mt-1">
                   <div className="flex items-center gap-1">
                     <button onClick={togglePlay} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
-                      {isBuffering ? <Loader2 className="w-4 h-4 text-foreground animate-spin" /> : playing ? <Pause className="w-4 h-4 text-foreground" /> : <Play className="w-4 h-4 text-foreground ml-0.5" />}
+                      {playing ? <Pause className="w-4 h-4 text-foreground" /> : <Play className="w-4 h-4 text-foreground ml-0.5" />}
                     </button>
                   </div>
                   <div className="flex items-center gap-1">
