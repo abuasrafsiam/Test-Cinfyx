@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Play, Pause, ArrowLeft, RotateCcw, RotateCw,
   Settings, Lock, Unlock, Gauge, Ratio, Loader2,
-  Smartphone, Sun, Volume2,
+  Smartphone,
 } from "lucide-react";
 import { useAdConfig } from "@/hooks/useAdConfig";
 import { ScreenOrientation } from "@capacitor/screen-orientation";
@@ -39,10 +39,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [activePanel, setActivePanel] = useState<"speed" | "quality" | null>(null);
   const [selectedQuality, setSelectedQuality] = useState("Auto");
   const [seekIndicator, setSeekIndicator] = useState<{ side: "left" | "right"; seconds: number } | null>(null);
-  const [brightness, setBrightness] = useState(100);
-  const [volume, setVolume] = useState(100);
-  const [displayBrightness, setDisplayBrightness] = useState<number | null>(null);
-  const [displayVolume, setDisplayVolume] = useState<number | null>(null);
   const [isLandscape, setIsLandscape] = useState(false);
 
   // Ad state
@@ -61,10 +57,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const doubleTapTimer = useRef<ReturnType<typeof setTimeout>>();
   const tapCount = useRef(0);
   const seekIndicatorTimer = useRef<ReturnType<typeof setTimeout>>();
-  const brightnessTimer = useRef<ReturnType<typeof setTimeout>>();
-  const volumeTimer = useRef<ReturnType<typeof setTimeout>>();
-  const touchStartY = useRef(0);
-  const touchStartX = useRef(0);
   const navigate = useNavigate();
 
   // Enter fullscreen + landscape + auto-play on mount
@@ -331,9 +323,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     if (tapCount.current === 1) {
       doubleTapTimer.current = setTimeout(() => {
         tapCount.current = 0;
-        if (!locked) {
-          setShowControls((p) => !p);
-          if (!showControls) resetHideTimer();
+        if (!locked && showControls) {
+          setShowControls(false);
         }
       }, 250);
     } else if (tapCount.current >= 2) {
@@ -345,46 +336,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     }
   };
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    const touch = e.touches[0];
-    touchStartY.current = touch.clientY;
-    touchStartX.current = touch.clientX;
-  };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!e.touches[0]) return;
-    const currentY = e.touches[0].clientY;
-    const currentX = e.touches[0].clientX;
-    const deltaY = touchStartY.current - currentY;
-    const containerWidth = containerRef.current?.clientWidth || 0;
-    const containerHeight = containerRef.current?.clientHeight || 0;
-    const isLeftSide = touchStartX.current < containerWidth / 2;
-
-    // Only trigger if vertical swipe
-    if (Math.abs(deltaY) > 10 && Math.abs(deltaY) > Math.abs(touchStartX.current - currentX)) {
-      if (isLeftSide) {
-        // Left side: brightness control
-        const delta = (deltaY / containerHeight) * 100;
-        const newBrightness = Math.max(0, Math.min(100, brightness + delta));
-        setBrightness(newBrightness);
-        setDisplayBrightness(newBrightness);
-        clearTimeout(brightnessTimer.current);
-        brightnessTimer.current = setTimeout(() => setDisplayBrightness(null), 1500);
-      } else {
-        // Right side: volume control
-        const delta = (deltaY / containerHeight) * 100;
-        const newVolume = Math.max(0, Math.min(100, volume + delta));
-        setVolume(newVolume);
-        setDisplayVolume(newVolume);
-        if (videoRef.current) {
-          videoRef.current.volume = newVolume / 100;
-        }
-        clearTimeout(volumeTimer.current);
-        volumeTimer.current = setTimeout(() => setDisplayVolume(null), 1500);
-      }
-      touchStartY.current = currentY;
-    }
-  };
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -402,9 +354,19 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       ref={containerRef}
       className="relative w-full h-screen bg-black flex items-center justify-center select-none"
       onMouseMove={() => { if (!locked && !showingAd) resetHideTimer(); }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
     >
+      {/* Loading skeleton */}
+      {isBuffering && (
+        <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-30 gap-4">
+          <div className="flex gap-2">
+            <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0s' }} />
+            <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+            <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+          </div>
+          <p className="text-foreground/60 text-sm font-medium">Loading...</p>
+        </div>
+      )}
+
       {/* Main video */}
       <video
         ref={videoRef}
@@ -475,33 +437,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
             </div>
           )}
 
-          {/* Brightness indicator */}
-          {displayBrightness !== null && (
-            <div className="absolute top-1/2 left-1/4 -translate-y-1/2 flex flex-col items-center gap-3 animate-fade-in">
-              <Sun className="w-8 h-8 text-yellow-400" />
-              <div className="w-24 h-2 bg-foreground/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-yellow-400 transition-all duration-100"
-                  style={{ width: `${displayBrightness}%` }}
-                />
-              </div>
-              <span className="text-xs text-foreground/80">{Math.round(displayBrightness)}%</span>
-            </div>
-          )}
 
-          {/* Volume indicator */}
-          {displayVolume !== null && (
-            <div className="absolute top-1/2 right-1/4 -translate-y-1/2 flex flex-col items-center gap-3 animate-fade-in">
-              <Volume2 className="w-8 h-8 text-blue-400" />
-              <div className="w-24 h-2 bg-foreground/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-400 transition-all duration-100"
-                  style={{ width: `${displayVolume}%` }}
-                />
-              </div>
-              <span className="text-xs text-foreground/80">{Math.round(displayVolume)}%</span>
-            </div>
-          )}
 
           {/* Locked state */}
           {locked && (
@@ -513,7 +449,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
           {/* Controls overlay */}
           {!locked && (
             <div className={`absolute inset-0 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-              <div className="absolute inset-0 bg-background/40 pointer-events-none" />
 
               {/* Top bar */}
               <div className="absolute top-0 left-0 right-0 px-4 py-3 flex items-center justify-between z-10">
