@@ -6,6 +6,8 @@ import {
   Smartphone,
 } from "lucide-react";
 import { useAdConfig } from "@/hooks/useAdConfig";
+import { ScreenOrientation } from "@capacitor/screen-orientation";
+import { Capacitor } from "@capacitor/core";
 
 interface VideoPlayerProps {
   url: string;
@@ -68,7 +70,15 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       } catch {}
 
       // Lock to landscape after fullscreen
-      try { await screen.orientation?.lock?.("landscape"); } catch {}
+      try {
+        if (Capacitor.isNativePlatform()) {
+          // Use Capacitor API on native platforms (Android/iOS)
+          await ScreenOrientation.lock({ orientation: "landscape" });
+        } else {
+          // Use web API on web
+          await screen.orientation?.lock?.("landscape");
+        }
+      } catch {}
 
       // Auto-play video
       const v = videoRef.current;
@@ -84,7 +94,13 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     setup();
 
     return () => {
-      try { screen.orientation?.unlock?.(); } catch {}
+      try {
+        if (Capacitor.isNativePlatform()) {
+          ScreenOrientation.unlock();
+        } else {
+          screen.orientation?.unlock?.();
+        }
+      } catch {}
       if (document.fullscreenElement) {
         try { document.exitFullscreen(); } catch {}
       }
@@ -230,7 +246,13 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     const v = videoRef.current;
     if (v) { v.pause(); setPlaying(false); }
     if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch {} }
-    try { screen.orientation?.unlock?.(); } catch {}
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await ScreenOrientation.unlock();
+      } else {
+        screen.orientation?.unlock?.();
+      }
+    } catch {}
     if (window.history.length > 1) navigate(-1);
     else navigate("/");
   };
@@ -242,13 +264,26 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
       }
-      const orientation = screen.orientation;
-      if (orientation) {
+
+      if (Capacitor.isNativePlatform()) {
+        // Use Capacitor API on native platforms (Android/iOS)
+        const orientation = await ScreenOrientation.current();
         const isLandscape = orientation.type.startsWith("landscape");
         if (isLandscape) {
-          await orientation.unlock();
+          await ScreenOrientation.unlock();
         } else {
-          await orientation.lock("landscape");
+          await ScreenOrientation.lock({ orientation: "landscape" });
+        }
+      } else {
+        // Use web API on web
+        const orientation = screen.orientation;
+        if (orientation) {
+          const isLandscape = orientation.type.startsWith("landscape");
+          if (isLandscape) {
+            await orientation.unlock();
+          } else {
+            await orientation.lock("landscape");
+          }
         }
       }
     } catch {}

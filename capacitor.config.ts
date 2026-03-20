@@ -15,8 +15,12 @@ const config: CapacitorConfig = {
       androidSplashResourceName: "splash",
       splashFullScreen: true,
       splashImmersive: true
+    },
+    ScreenOrientation: {
+      // Allow orientation changes
     }
   }
 };
 
 export default config;
+
