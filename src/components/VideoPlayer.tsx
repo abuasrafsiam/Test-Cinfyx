@@ -35,6 +35,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [buffered, setBuffered] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
   const [locked, setLocked] = useState(false);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [aspectIdx, setAspectIdx] = useState(0);
   const [activePanel, setActivePanel] = useState<"speed" | "quality" | null>(null);
@@ -366,8 +367,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       onMouseMove={() => { if (!locked && !showingAd) resetHideTimer(); }}
       onClick={handleContainerClick}
     >
-      {/* Loading skeleton */}
-      {isBuffering && (
+      {/* Loading skeleton - only show on initial load */}
+      {isBuffering && !hasStartedPlaying && (
         <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-30 gap-4">
           <div className="flex gap-2">
             <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0s' }} />
@@ -391,9 +392,15 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
         onEnded={() => setPlaying(false)}
-        onWaiting={() => setIsBuffering(true)}
-        onCanPlay={() => setIsBuffering(false)}
-        onPlaying={() => { setIsBuffering(false); setPlaying(true); }}
+        onCanPlay={() => {
+          setIsBuffering(false);
+          setHasStartedPlaying(true);
+        }}
+        onPlaying={() => {
+          setIsBuffering(false);
+          setHasStartedPlaying(true);
+          setPlaying(true);
+        }}
       />
 
       {/* Hidden preload ad video */}
@@ -434,12 +441,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       {/* ===== NORMAL PLAYER CONTROLS (hidden during ad) ===== */}
       {!showingAd && (
         <>
-          {/* Double-tap zones */}
-          <div className="absolute inset-0 flex">
-            <div className="flex-1" onClick={() => handleAreaTap("left")} />
-            <div className="flex-1" onClick={() => handleAreaTap("right")} />
-          </div>
-
           {/* Seek indicator */}
           {seekIndicator && (
             <div className={`absolute top-1/2 -translate-y-1/2 ${seekIndicator.side === "left" ? "left-16" : "right-16"} flex flex-col items-center animate-fade-in`}>
@@ -447,6 +448,12 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
               <span className="text-xs text-foreground/80 mt-1">{seekIndicator.seconds}s</span>
             </div>
           )}
+
+          {/* Double-tap zones - positioned above controls but below everything */}
+          <div className="absolute inset-0 flex pointer-events-none" style={{ zIndex: 5 }}>
+            <div className="flex-1 pointer-events-auto" onClick={() => handleAreaTap("left")} />
+            <div className="flex-1 pointer-events-auto" onClick={() => handleAreaTap("right")} />
+          </div>
 
 
 
