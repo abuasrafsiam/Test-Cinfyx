@@ -476,7 +476,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
                 <div className="flex items-center justify-between mt-1">
                   <div className="flex items-center gap-1">
                     <button onClick={togglePlay} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
-                      {isBuffering ? <Loader2 className="w-4 h-4 text-foreground animate-spin" /> : playing ? <Pause className="w-4 h-4 text-foreground" /> : <Play className="w-4 h-4 text-foreground ml-0.5" />}
+                      {playing ? <Pause className="w-4 h-4 text-foreground" /> : <Play className="w-4 h-4 text-foreground ml-0.5" />}
                     </button>
                   </div>
                   <div className="flex items-center gap-1">
