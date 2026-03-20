@@ -31,7 +31,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
-  const [videoError, setVideoError] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [aspectIdx, setAspectIdx] = useState(0);
@@ -57,38 +56,20 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const seekIndicatorTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
-  // Enter fullscreen + landscape + auto-play on mount
+  // Auto-play + landscape on mount
   useEffect(() => {
-    const setup = async () => {
-      // Enter fullscreen first (required for orientation lock on Android)
-      try {
-        if (containerRef.current && !document.fullscreenElement) {
-          await containerRef.current.requestFullscreen();
-          setIsFullscreen(true);
-        }
-      } catch {}
-
-      // Lock to landscape after fullscreen
-      try { await screen.orientation?.lock?.("landscape"); } catch {}
-
-      // Auto-play video
-      const v = videoRef.current;
-      if (v) {
-        v.load();
-        const playWhenReady = () => {
-          v.play().then(() => setPlaying(true)).catch(() => {});
-        };
-        if (v.readyState >= 2) playWhenReady();
-        else v.addEventListener("canplay", playWhenReady, { once: true });
-      }
-    };
-    setup();
-
+    const v = videoRef.current;
+    if (v) {
+      v.load();
+      const playWhenReady = () => {
+        v.play().then(() => setPlaying(true)).catch(() => {});
+      };
+      if (v.readyState >= 2) playWhenReady();
+      else v.addEventListener("canplay", playWhenReady, { once: true });
+    }
+    try { screen.orientation?.lock?.("landscape").catch(() => {}); } catch {}
     return () => {
       try { screen.orientation?.unlock?.(); } catch {}
-      if (document.fullscreenElement) {
-        try { document.exitFullscreen(); } catch {}
-      }
       clearInterval(adCountdownInterval.current);
     };
   }, [url]);
@@ -232,17 +213,11 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     if (v) { v.pause(); setPlaying(false); }
     if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch {} }
     try { screen.orientation?.unlock?.(); } catch {}
-    if (window.history.length > 1) navigate(-1);
-    else navigate("/");
+    navigate(-1);
   };
 
   const toggleLandscape = async () => {
     try {
-      // Ensure fullscreen first (required for orientation lock on Android)
-      if (containerRef.current && !document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      }
       const orientation = screen.orientation;
       if (orientation) {
         const isLandscape = orientation.type.startsWith("landscape");
@@ -317,10 +292,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       <video
         ref={videoRef}
         src={url}
-        autoPlay
-        playsInline
-        webkit-playsinline="true"
-        x-webkit-airplay="allow"
         className={`w-full h-full ${showingAd ? "hidden" : ""}`}
         style={{ objectFit: ASPECTS[aspectIdx].value as any }}
         onTimeUpdate={handleTimeUpdate}
@@ -328,12 +299,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         onEnded={() => setPlaying(false)}
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
-        onPlaying={() => { setIsBuffering(false); setPlaying(true); }}
-        onError={(e) => {
-          const mediaErr = (e.target as HTMLVideoElement).error;
-          setVideoError(mediaErr?.message || "Failed to load video. The source may be unavailable.");
-          setIsBuffering(false);
-        }}
+        onPlaying={() => setIsBuffering(false)}
+        playsInline
       />
 
       {/* Hidden preload ad video */}
@@ -343,30 +310,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         playsInline
         onEnded={endAd}
       />
-
-      {/* ===== VIDEO ERROR OVERLAY ===== */}
-      {videoError && !showingAd && (
-        <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center gap-4 px-6">
-          <p className="text-foreground text-sm text-center">{videoError}</p>
-          <button
-            onClick={() => {
-              setVideoError(null);
-              setIsBuffering(true);
-              const v = videoRef.current;
-              if (v) {
-                v.load();
-                v.play().then(() => setPlaying(true)).catch(() => {});
-              }
-            }}
-            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg active:scale-95 transition-transform"
-          >
-            Retry
-          </button>
-          <button onClick={handleBack} className="text-muted-foreground text-xs underline">
-            Go back
-          </button>
-        </div>
-      )}
 
       {/* ===== AD OVERLAY ===== */}
       {showingAd && (
@@ -421,8 +364,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
 
           {/* Controls overlay */}
           {!locked && (
-            <div className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
+            <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+              <div className="absolute inset-0 bg-background/40 pointer-events-none" />
 
               {/* Top bar */}
               <div className="absolute top-0 left-0 right-0 px-4 py-3 flex items-center justify-between z-10">
