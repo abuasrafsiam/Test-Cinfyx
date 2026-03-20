@@ -50,6 +50,23 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [displayVolume, setDisplayVolume] = useState<number | null>(null);
   const [isProcessingGesture, setIsProcessingGesture] = useState(false);
 
+  // Loading messages state
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const loadingMessages = [
+    "Getting ready...",
+    "Almost there...",
+    "Preparing video...",
+    "Grabbing popcorn...",
+    "Unlocking cinematic magic...",
+    "Buffering awesomeness...",
+  ];
+  const tipMessages = [
+    "💡 Pro Tip: Swipe left for brightness, right for volume!",
+    "💡 Pro Tip: Double-tap left/right to skip 10 seconds",
+    "💡 Pro Tip: Swipe down on the left to dim the screen",
+    "💡 Pro Tip: Long press the lock icon to lock controls",
+  ];
+
   // Enable immersive mode (hide status/nav bar)
   useImmersiveMode();
 
@@ -125,6 +142,15 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
       clearInterval(adCountdownInterval.current);
     };
   }, [url]);
+
+  // Cycle loading messages
+  useEffect(() => {
+    if (!isBuffering || hasStartedPlaying) return;
+    const interval = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % (loadingMessages.length + tipMessages.length));
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [isBuffering, hasStartedPlaying, loadingMessages.length, tipMessages.length]);
 
   // Preload ad video
   useEffect(() => {
@@ -435,13 +461,28 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     >
       {/* Loading skeleton - only show on initial load */}
       {isBuffering && !hasStartedPlaying && (
-        <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-30 gap-4">
+        <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-30 gap-6">
+          {/* Animated spinner */}
           <div className="flex gap-2">
             <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0s' }} />
             <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
             <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
           </div>
-          <p className="text-foreground/60 text-sm font-medium">Loading...</p>
+          
+          {/* Video title */}
+          <div className="text-center max-w-xs">
+            <p className="text-foreground/40 text-xs uppercase tracking-wide mb-1">Loading</p>
+            <p className="text-foreground text-lg font-semibold line-clamp-2">{title}</p>
+          </div>
+          
+          {/* Cycling messages */}
+          <div className="h-12 flex items-center justify-center">
+            <p className="text-foreground/70 text-sm font-medium text-center animate-fade-in">
+              {loadingMessageIndex < loadingMessages.length
+                ? loadingMessages[loadingMessageIndex]
+                : tipMessages[loadingMessageIndex - loadingMessages.length]}
+            </p>
+          </div>
         </div>
       )}
 
