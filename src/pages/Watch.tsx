@@ -30,7 +30,7 @@ const Watch = () => {
     );
   }
 
-  return <VideoPlayer url={movie.video_url} title={movie.title} />;
+  return <VideoPlayer url={movie.video_url} backupUrl1={movie.video_url_backup_1} backupUrl2={movie.video_url_backup_2} title={movie.title} videoId={movie.id} />;
 };
 
 export default Watch;

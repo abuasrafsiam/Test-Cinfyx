@@ -32,6 +32,8 @@ export interface Episode {
   title: string;
   description: string;
   video_url: string;
+  video_url_backup_1?: string;
+  video_url_backup_2?: string;
   duration: string;
   thumbnail_url: string;
   created_at: string;
@@ -111,5 +113,21 @@ export function useFeaturedShows() {
       if (error) throw error;
       return data as Show[];
     },
+  });
+}
+
+export function useSearchShows(query: string) {
+  return useQuery({
+    queryKey: ["shows", "search", query],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shows")
+        .select("*")
+        .ilike("title", `%${query}%`)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Show[];
+    },
+    enabled: query.length > 0,
   });
 }

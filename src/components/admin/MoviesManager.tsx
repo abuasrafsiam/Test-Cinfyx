@@ -16,7 +16,7 @@ import { fetchTMDBById, searchTMDB, searchTMDBByTitle, fetchTMDBTrailer, type TM
 
 const emptyMovie = {
   title: "", description: "", poster_url: "", backdrop_url: "",
-  video_url: "", category: "Trending", year: "", genre: "", featured: false,
+  video_url: "", video_url_backup_1: "", video_url_backup_2: "", category: "Trending", year: "", genre: "", featured: false,
 };
 
 const MoviesManager = () => {
@@ -85,7 +85,8 @@ const MoviesManager = () => {
     const payload = {
       title: editing.title, description: editing.description || "",
       poster_url: editing.poster_url || "", backdrop_url: editing.backdrop_url || "",
-      video_url: editing.video_url || "", category: editing.category || "Trending",
+      video_url: editing.video_url || "", video_url_backup_1: editing.video_url_backup_1 || "", video_url_backup_2: editing.video_url_backup_2 || "",
+      category: editing.category || "Trending",
       year: editing.year || "", genre: editing.genre || "", featured: editing.featured || false,
     };
     if (isNew) {
@@ -298,8 +299,16 @@ const MoviesManager = () => {
                 <Input value={editing.backdrop_url || ""} onChange={(e) => update("backdrop_url", e.target.value)} className="bg-secondary border-0 mt-1" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Video URL</Label>
+                <Label className="text-xs text-muted-foreground">Video URL (Primary)</Label>
                 <Input value={editing.video_url || ""} onChange={(e) => update("video_url", e.target.value)} className="bg-secondary border-0 mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Backup Source 1</Label>
+                <Input value={editing.video_url_backup_1 || ""} onChange={(e) => update("video_url_backup_1", e.target.value)} className="bg-secondary border-0 mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Backup Source 2</Label>
+                <Input value={editing.video_url_backup_2 || ""} onChange={(e) => update("video_url_backup_2", e.target.value)} className="bg-secondary border-0 mt-1" />
               </div>
               <div className="flex items-center gap-3">
                 <Switch checked={showOnHero} onCheckedChange={(v) => setShowOnHero(v)} />

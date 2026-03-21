@@ -5,14 +5,19 @@ import {
   Settings, Lock, Unlock, Gauge, Ratio, Loader2,
   Smartphone, Sun, Volume2,
 } from "lucide-react";
+import HLS from "hls.js";
 import { useAdConfig } from "@/hooks/useAdConfig";
 import { useImmersiveMode } from "@/hooks/useImmersiveMode";
+import { useLastWorkingSource } from "@/hooks/useLastWorkingSource";
 import { ScreenOrientation } from "@capacitor/screen-orientation";
 import { Capacitor } from "@capacitor/core";
 
 interface VideoPlayerProps {
   url: string;
+  backupUrl1?: string;
+  backupUrl2?: string;
   title: string;
+  videoId?: string;
 }
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -23,10 +28,21 @@ const ASPECTS: { label: string; value: string }[] = [
   { label: "Stretch", value: "fill" },
 ];
 
-const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
+const VideoPlayer = ({ url, backupUrl1, backupUrl2, title, videoId }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const adVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { getLastWorking, saveLastWorking } = useLastWorkingSource();
+  
+  // Multi-source fallback state
+  const videoSources = [url, backupUrl1, backupUrl2].filter(Boolean) as string[];
+  const [currentSourceIndex, setCurrentSourceIndex] = useState(() => {
+    if (!videoId) return 0;
+    const lastWorking = getLastWorking(videoId);
+    return Math.min(lastWorking, videoSources.length - 1);
+  });
+  const [sourceLoadAttempt, setSourceLoadAttempt] = useState(0);
+  
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -49,23 +65,6 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const [displayBrightness, setDisplayBrightness] = useState<number | null>(null);
   const [displayVolume, setDisplayVolume] = useState<number | null>(null);
   const [isProcessingGesture, setIsProcessingGesture] = useState(false);
-
-  // Loading messages state
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  const loadingMessages = [
-    "Getting ready...",
-    "Almost there...",
-    "Preparing video...",
-    "Grabbing popcorn...",
-    "Unlocking cinematic magic...",
-    "Buffering awesomeness...",
-  ];
-  const tipMessages = [
-    "💡 Pro Tip: Swipe left for brightness, right for volume!",
-    "💡 Pro Tip: Double-tap left/right to skip 10 seconds",
-    "💡 Pro Tip: Swipe down on the left to dim the screen",
-    "💡 Pro Tip: Long press the lock icon to lock controls",
-  ];
 
   // Enable immersive mode (hide status/nav bar)
   useImmersiveMode();
@@ -143,14 +142,99 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     };
   }, [url]);
 
-  // Cycle loading messages
+  const hlsRef = useRef<HLS | null>(null);
+
+  // Multi-source fallback handler with HLS support
   useEffect(() => {
-    if (!isBuffering || hasStartedPlaying) return;
-    const interval = setInterval(() => {
-      setLoadingMessageIndex((prev) => (prev + 1) % (loadingMessages.length + tipMessages.length));
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [isBuffering, hasStartedPlaying, loadingMessages.length, tipMessages.length]);
+    const video = videoRef.current;
+    if (!video || videoSources.length === 0) return;
+
+    const currentUrl = videoSources[currentSourceIndex];
+    if (!currentUrl) return;
+
+    const setupVideo = () => {
+      // Check if URL is HLS (M3U8)
+      const isHLS = currentUrl.includes(".m3u8") || currentUrl.includes("m3u8");
+
+      if (isHLS && HLS.isSupported()) {
+        // Use HLS.js for M3U8 streams
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+        }
+        const hls = new HLS({
+          enableWorker: false,
+          autoStartLoad: true,
+          // Add CORS headers
+          xhrSetup: (xhr: XMLHttpRequest) => {
+            xhr.withCredentials = false;
+          },
+        });
+        
+        hlsRef.current = hls;
+
+        hls.loadSource(currentUrl);
+        hls.attachMedia(video);
+
+        let hlsLoaded = false;
+
+        hls.on(HLS.Events.MANIFEST_PARSED, () => {
+          hlsLoaded = true;
+          if (videoId) {
+            saveLastWorking(videoId, currentSourceIndex);
+          }
+        });
+
+        hls.on(HLS.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            // Try next source on fatal error
+            if (currentSourceIndex < videoSources.length - 1) {
+              setCurrentSourceIndex((prev) => prev + 1);
+            }
+          }
+        });
+      } else {
+        // Use standard HTML5 video for MP4 and other formats
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
+        
+        video.src = currentUrl;
+        video.load();
+
+        const handleError = () => {
+          // Try next source if available
+          if (currentSourceIndex < videoSources.length - 1) {
+            setCurrentSourceIndex((prev) => prev + 1);
+          }
+        };
+
+        const handleCanPlay = () => {
+          // Successfully loaded, save as last working
+          if (videoId) {
+            saveLastWorking(videoId, currentSourceIndex);
+          }
+        };
+
+        video.addEventListener("error", handleError);
+        video.addEventListener("canplay", handleCanPlay, { once: true });
+
+        return () => {
+          video.removeEventListener("error", handleError);
+          video.removeEventListener("canplay", handleCanPlay);
+        };
+      }
+    };
+
+    setupVideo();
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [currentSourceIndex, videoSources, videoId, saveLastWorking]);
 
   // Preload ad video
   useEffect(() => {
@@ -414,16 +498,20 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
         const newBrightness = Math.max(0, Math.min(100, brightness + percentChange));
         setBrightness(newBrightness);
         setDisplayBrightness(Math.round(newBrightness));
+        setDisplayVolume(null); // Clear volume overlay
         clearTimeout(brightnessTimer.current);
+        clearTimeout(volumeTimer.current);
       } else {
         // Right side: volume control - increased sensitivity (1.5x more responsive)
         const percentChange = (deltaY / containerHeight) * 150;
         const newVolume = Math.max(0, Math.min(100, volume + percentChange));
         setVolume(newVolume);
         setDisplayVolume(Math.round(newVolume));
+        setDisplayBrightness(null); // Clear brightness overlay
         if (videoRef.current) {
           videoRef.current.volume = newVolume / 100;
         }
+        clearTimeout(brightnessTimer.current);
         clearTimeout(volumeTimer.current);
       }
     }
@@ -431,8 +519,8 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
 
   const handleTouchEnd = () => {
     setIsProcessingGesture(false);
-    brightnessTimer.current = setTimeout(() => setDisplayBrightness(null), 1000);
-    volumeTimer.current = setTimeout(() => setDisplayVolume(null), 1000);
+    brightnessTimer.current = setTimeout(() => setDisplayBrightness(null), 800);
+    volumeTimer.current = setTimeout(() => setDisplayVolume(null), 800);
   };
 
 
@@ -461,28 +549,13 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
     >
       {/* Loading skeleton - only show on initial load */}
       {isBuffering && !hasStartedPlaying && (
-        <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-30 gap-6">
-          {/* Animated spinner */}
+        <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-30 gap-4">
           <div className="flex gap-2">
             <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0s' }} />
             <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
             <div className="w-2 h-8 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
           </div>
-          
-          {/* Video title */}
-          <div className="text-center max-w-xs">
-            <p className="text-foreground/40 text-xs uppercase tracking-wide mb-1">Loading</p>
-            <p className="text-foreground text-lg font-semibold line-clamp-2">{title}</p>
-          </div>
-          
-          {/* Cycling messages */}
-          <div className="h-12 flex items-center justify-center">
-            <p className="text-foreground/70 text-sm font-medium text-center animate-fade-in">
-              {loadingMessageIndex < loadingMessages.length
-                ? loadingMessages[loadingMessageIndex]
-                : tipMessages[loadingMessageIndex - loadingMessages.length]}
-            </p>
-          </div>
+          <p className="text-foreground/60 text-sm font-medium">Loading...</p>
         </div>
       )}
 
@@ -558,7 +631,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
 
           {/* Brightness overlay - MovieBox style pill */}
           {displayBrightness !== null && (
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 animate-fade-in">
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 animate-in fade-in duration-200">
               <div className="flex items-center gap-3 px-4 py-2 bg-black/80 backdrop-blur-md rounded-full border border-foreground/20">
                 <Sun className="w-5 h-5 text-yellow-400 shrink-0" />
                 <div className="flex items-center gap-2">
@@ -573,7 +646,7 @@ const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
 
           {/* Volume overlay - MovieBox style pill */}
           {displayVolume !== null && (
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 animate-fade-in">
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 animate-in fade-in duration-200">
               <div className="flex items-center gap-3 px-4 py-2 bg-black/80 backdrop-blur-md rounded-full border border-foreground/20">
                 <Volume2 className="w-5 h-5 text-blue-400 shrink-0" />
                 <div className="flex items-center gap-2">

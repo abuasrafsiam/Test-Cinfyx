@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, X, Clock, TrendingUp, Trash2 } from "lucide-react";
+import { ArrowLeft, Search, X, Clock, TrendingUp, Trash2, Film, Tv } from "lucide-react";
 import { useSearchMovies, useMovies } from "@/hooks/useMovies";
-import { useShows } from "@/hooks/useShows";
+import { useShows, useSearchShows } from "@/hooks/useShows";
 
 const RECENT_KEY = "cinefyx_recent_searches";
 const MAX_RECENT = 10;
@@ -26,14 +26,19 @@ const clearRecent = () => localStorage.removeItem(RECENT_KEY);
 const SearchPage = () => {
   const [query, setQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>(getRecent());
-  const { data: searchResults = [] } = useSearchMovies(query);
+  const { data: searchMovies = [] } = useSearchMovies(query);
+  const { data: searchShows = [] } = useSearchShows(query);
   const { data: allMovies = [] } = useMovies();
   const { data: allShows = [] } = useShows();
   const navigate = useNavigate();
 
-  // "Everyone Searching" — trending: pick movies with most play_events or just featured/latest
-  const trendingMovies = allMovies.filter((m) => m.featured).slice(0, 6);
-  const trendingFallback = trendingMovies.length > 0 ? trendingMovies : allMovies.slice(0, 6);
+  // Combine search results from movies and shows
+  const searchResults = [...searchMovies, ...searchShows];
+
+  // "Everyone Searching" — trending: pick movies and shows with featured flag
+  const trendingMovies = allMovies.filter((m) => m.featured).slice(0, 3);
+  const trendingShows = allShows.filter((s) => s.featured).slice(0, 3);
+  const trendingFallback = [...trendingMovies, ...trendingShows].length > 0 ? [...trendingMovies, ...trendingShows] : [...allMovies.slice(0, 3), ...allShows.slice(0, 3)];
 
   const handleSearch = useCallback(
     (term: string) => {
@@ -59,8 +64,8 @@ const SearchPage = () => {
     setRecentSearches([]);
   };
 
-  const movies = query.length > 0 ? searchResults : [];
-  const showEmpty = query.length > 0 && movies.length === 0;
+  const results = query.length > 0 ? searchResults : [];
+  const showEmpty = query.length > 0 && results.length === 0;
   const showIdleState = query.length === 0;
 
   return (
@@ -144,60 +149,72 @@ const SearchPage = () => {
               <h3 className="text-sm font-semibold">Everyone Searching</h3>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {trendingFallback.map((movie) => (
-                <button
-                  key={movie.id}
-                  onClick={() => navigate(`/movie/${movie.id}`)}
-                  className="focus:outline-none group text-left"
-                >
-                  <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary shadow-md">
-                    {movie.poster_url ? (
-                      <img
-                        src={movie.poster_url}
-                        alt={movie.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">
-                        {movie.title}
+              {trendingFallback.map((item) => {
+                const isMovie = 'video_url' in item;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(isMovie ? `/movie/${item.id}` : `/show/${item.id}`)}
+                    className="focus:outline-none group text-left"
+                  >
+                    <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary shadow-md relative">
+                      {item.poster_url ? (
+                        <img
+                          src={item.poster_url}
+                          alt={item.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">
+                          {item.title}
+                        </div>
+                      )}
+                      <div className="absolute bottom-2 right-2 bg-black/80 rounded-full p-1.5">
+                        {isMovie ? <Film className="w-3 h-3 text-yellow-400" /> : <Tv className="w-3 h-3 text-blue-400" />}
                       </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-foreground/80 mt-1.5 truncate font-medium">{movie.title}</p>
-                </button>
-              ))}
+                    </div>
+                    <p className="text-xs text-foreground/80 mt-1.5 truncate font-medium">{item.title}</p>
+                  </button>
+                );
+              })}
             </div>
           </section>
         </div>
       )}
 
       {/* Search results */}
-      {!showIdleState && movies.length > 0 && (
+      {!showIdleState && results.length > 0 && (
         <div className="grid grid-cols-3 gap-3 p-4">
-          {movies.map((movie) => (
+          {results.map((item) => {
+            const isMovie = 'video_url' in item;
+            return (
             <button
-              key={movie.id}
-              onClick={() => navigate(`/movie/${movie.id}`)}
+              key={item.id}
+              onClick={() => navigate(isMovie ? `/movie/${item.id}` : `/show/${item.id}`)}
               className="focus:outline-none group text-left"
             >
-              <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary shadow-md">
-                {movie.poster_url ? (
+              <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary shadow-md relative">
+                {item.poster_url ? (
                   <img
-                    src={movie.poster_url}
-                    alt={movie.title}
+                    src={item.poster_url}
+                    alt={item.title}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs p-2 text-center">
-                    {movie.title}
+                    {item.title}
                   </div>
                 )}
+                <div className="absolute bottom-2 right-2 bg-black/80 rounded-full p-1.5">
+                  {isMovie ? <Film className="w-3 h-3 text-yellow-400" /> : <Tv className="w-3 h-3 text-blue-400" />}
+                </div>
               </div>
-              <p className="text-xs text-foreground/80 mt-1.5 truncate font-medium">{movie.title}</p>
+              <p className="text-xs text-foreground/80 mt-1.5 truncate font-medium">{item.title}</p>
             </button>
-          ))}
+            );
+          })}
         </div>
       )}
 

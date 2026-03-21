@@ -37,7 +37,7 @@ const WatchEpisode = () => {
     );
   }
 
-  return <VideoPlayer url={episode.video_url} title={episode.title} />;
+  return <VideoPlayer url={episode.video_url} backupUrl1={episode.video_url_backup_1} backupUrl2={episode.video_url_backup_2} title={episode.title} videoId={episode.id} />;
 };
 
 export default WatchEpisode;

@@ -244,6 +244,8 @@ const ShowsManager = () => {
       title: editingEpisode.title || "",
       description: editingEpisode.description || "",
       video_url: editingEpisode.video_url || "",
+      video_url_backup_1: editingEpisode.video_url_backup_1 || "",
+      video_url_backup_2: editingEpisode.video_url_backup_2 || "",
       duration: editingEpisode.duration || "",
       thumbnail_url: editingEpisode.thumbnail_url || "",
     };
@@ -378,7 +380,7 @@ const ShowsManager = () => {
                   <Textarea value={editingEpisode.description || ""} onChange={(e) => setEditingEpisode((p) => p ? { ...p, description: e.target.value } : p)} className="bg-secondary border-0 mt-1 min-h-[60px]" />
                 </div>
                 <div>
-                  <Label className="text-xs text-foreground font-semibold">Video URL *<span className="text-destructive ml-1">(required)</span></Label>
+                  <Label className="text-xs text-foreground font-semibold">Video URL (Primary) *<span className="text-destructive ml-1">(required)</span></Label>
                   <Input
                     value={editingEpisode.video_url || ""}
                     onChange={(e) => setEditingEpisode((p) => p ? { ...p, video_url: e.target.value } : p)}
@@ -386,6 +388,26 @@ const ShowsManager = () => {
                     className={`mt-1 border ${editingEpisode.video_url ? "bg-secondary border-green-500/30" : "bg-secondary border-destructive/30"}`}
                   />
                   <p className="text-[11px] text-muted-foreground mt-1">MP4 or streamable video link for this episode</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Backup Source 1</Label>
+                  <Input
+                    value={editingEpisode.video_url_backup_1 || ""}
+                    onChange={(e) => setEditingEpisode((p) => p ? { ...p, video_url_backup_1: e.target.value } : p)}
+                    placeholder="https://backup1.com/episode.mp4"
+                    className="bg-secondary border-0 mt-1"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Fallback source if primary fails</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Backup Source 2</Label>
+                  <Input
+                    value={editingEpisode.video_url_backup_2 || ""}
+                    onChange={(e) => setEditingEpisode((p) => p ? { ...p, video_url_backup_2: e.target.value } : p)}
+                    placeholder="https://backup2.com/episode.mp4"
+                    className="bg-secondary border-0 mt-1"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Second fallback source</p>
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Thumbnail URL</Label>
