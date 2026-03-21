@@ -26,9 +26,7 @@ const FeaturedCarousel = () => {
 
   if (heroes.length === 0) {
     return (
-      <div className="relative h-[42vh] bg-gradient-to-b from-secondary to-background flex items-center justify-center">
-        <p className="text-muted-foreground">No hero items configured. Add them in the Admin panel.</p>
-      </div>
+      <div className="relative h-[42vh] bg-gradient-to-b from-secondary to-background" />
     );
   }
 
