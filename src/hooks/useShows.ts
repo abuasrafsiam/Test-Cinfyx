@@ -32,8 +32,6 @@ export interface Episode {
   title: string;
   description: string;
   video_url: string;
-  video_url_backup_1?: string;
-  video_url_backup_2?: string;
   duration: string;
   thumbnail_url: string;
   created_at: string;

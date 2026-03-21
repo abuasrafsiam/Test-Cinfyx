@@ -5,19 +5,14 @@ import {
   Settings, Lock, Unlock, Gauge, Ratio, Loader2,
   Smartphone, Sun, Volume2,
 } from "lucide-react";
-import HLS from "hls.js";
 import { useAdConfig } from "@/hooks/useAdConfig";
 import { useImmersiveMode } from "@/hooks/useImmersiveMode";
-import { useLastWorkingSource } from "@/hooks/useLastWorkingSource";
 import { ScreenOrientation } from "@capacitor/screen-orientation";
 import { Capacitor } from "@capacitor/core";
 
 interface VideoPlayerProps {
   url: string;
-  backupUrl1?: string;
-  backupUrl2?: string;
   title: string;
-  videoId?: string;
 }
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -28,21 +23,10 @@ const ASPECTS: { label: string; value: string }[] = [
   { label: "Stretch", value: "fill" },
 ];
 
-const VideoPlayer = ({ url, backupUrl1, backupUrl2, title, videoId }: VideoPlayerProps) => {
+const VideoPlayer = ({ url, title }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const adVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { getLastWorking, saveLastWorking } = useLastWorkingSource();
-  
-  // Multi-source fallback state
-  const videoSources = [url, backupUrl1, backupUrl2].filter(Boolean) as string[];
-  const [currentSourceIndex, setCurrentSourceIndex] = useState(() => {
-    if (!videoId) return 0;
-    const lastWorking = getLastWorking(videoId);
-    return Math.min(lastWorking, videoSources.length - 1);
-  });
-  const [sourceLoadAttempt, setSourceLoadAttempt] = useState(0);
-  
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -141,100 +125,6 @@ const VideoPlayer = ({ url, backupUrl1, backupUrl2, title, videoId }: VideoPlaye
       clearInterval(adCountdownInterval.current);
     };
   }, [url]);
-
-  const hlsRef = useRef<HLS | null>(null);
-
-  // Multi-source fallback handler with HLS support
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || videoSources.length === 0) return;
-
-    const currentUrl = videoSources[currentSourceIndex];
-    if (!currentUrl) return;
-
-    const setupVideo = () => {
-      // Check if URL is HLS (M3U8)
-      const isHLS = currentUrl.includes(".m3u8") || currentUrl.includes("m3u8");
-
-      if (isHLS && HLS.isSupported()) {
-        // Use HLS.js for M3U8 streams
-        if (hlsRef.current) {
-          hlsRef.current.destroy();
-        }
-        const hls = new HLS({
-          enableWorker: false,
-          autoStartLoad: true,
-          // Add CORS headers
-          xhrSetup: (xhr: XMLHttpRequest) => {
-            xhr.withCredentials = false;
-          },
-        });
-        
-        hlsRef.current = hls;
-
-        hls.loadSource(currentUrl);
-        hls.attachMedia(video);
-
-        let hlsLoaded = false;
-
-        hls.on(HLS.Events.MANIFEST_PARSED, () => {
-          hlsLoaded = true;
-          if (videoId) {
-            saveLastWorking(videoId, currentSourceIndex);
-          }
-        });
-
-        hls.on(HLS.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            // Try next source on fatal error
-            if (currentSourceIndex < videoSources.length - 1) {
-              setCurrentSourceIndex((prev) => prev + 1);
-            }
-          }
-        });
-      } else {
-        // Use standard HTML5 video for MP4 and other formats
-        if (hlsRef.current) {
-          hlsRef.current.destroy();
-          hlsRef.current = null;
-        }
-        
-        video.src = currentUrl;
-        video.load();
-
-        const handleError = () => {
-          // Try next source if available
-          if (currentSourceIndex < videoSources.length - 1) {
-            setCurrentSourceIndex((prev) => prev + 1);
-          }
-        };
-
-        const handleCanPlay = () => {
-          // Successfully loaded, save as last working
-          if (videoId) {
-            saveLastWorking(videoId, currentSourceIndex);
-          }
-        };
-
-        video.addEventListener("error", handleError);
-        video.addEventListener("canplay", handleCanPlay, { once: true });
-
-        return () => {
-          video.removeEventListener("error", handleError);
-          video.removeEventListener("canplay", handleCanPlay);
-        };
-      }
-    };
-
-    setupVideo();
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-    };
-  }, [currentSourceIndex, videoSources, videoId, saveLastWorking]);
 
   // Preload ad video
   useEffect(() => {

@@ -8,8 +8,6 @@ export interface Movie {
   poster_url: string;
   backdrop_url: string;
   video_url: string;
-  video_url_backup_1?: string;
-  video_url_backup_2?: string;
   category: string;
   year: string;
   genre: string;

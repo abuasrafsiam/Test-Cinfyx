@@ -41,9 +41,14 @@ const AppSplash = ({ onComplete }: { onComplete: () => void }) => {
           className="w-32 h-32 object-contain"
         />
       </div>
-      <p className="pb-8 text-xs text-gray-500 tracking-widest uppercase">
-        Powered by Primeapps
-      </p>
+      <div className="pb-20 text-center">
+        <h1 className="text-3xl font-bold text-white tracking-wide mb-2">
+          CINEFYX
+        </h1>
+        <p className="text-sm text-gray-400 font-light tracking-wide">
+          Watch Movies & Shows in 4K
+        </p>
+      </div>
     </div>
   );
 };
